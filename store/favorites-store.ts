@@ -119,7 +119,7 @@ export const useFavoritesStore = create<FavoriteState>()(
       },
     }),
     {
-      name: "trade-intelligence-favorites",
+      name: "mizan23-favorites",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ lists: state.lists }),
     }

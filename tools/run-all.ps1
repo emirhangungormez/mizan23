@@ -1,6 +1,7 @@
 param(
     [switch]$SkipBrowser,
-    [switch]$NoInstall
+    [switch]$NoInstall,
+    [switch]$SkipFirewall
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,7 +28,7 @@ New-Item -ItemType Directory -Force -Path $runDir, $setupDir | Out-Null
 function Write-Header {
     Write-Host ""
     Write-Host "=============================================================" -ForegroundColor Cyan
-    Write-Host " Trade Intelligence - Bootstrap" -ForegroundColor Cyan
+    Write-Host " mizan23 - Bootstrap" -ForegroundColor Cyan
     Write-Host "=============================================================" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -46,6 +47,54 @@ function Write-Warn([string]$message) {
 
 function Write-Info([string]$message) {
     Write-Host "[INFO] $message" -ForegroundColor Gray
+}
+
+function Test-IsAdministrator {
+    try {
+        $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+        $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+        return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    } catch {
+        return $false
+    }
+}
+
+function Get-PrimaryLanIp {
+    try {
+        $ip = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+            Where-Object {
+                $_.IPAddress -ne "127.0.0.1" -and
+                $_.PrefixOrigin -ne "WellKnown" -and
+                $_.InterfaceAlias -notmatch "Loopback|vEthernet|WSL|Hyper-V|VirtualBox|VMware|Tailscale|ZeroTier"
+            } |
+            Sort-Object -Property SkipAsSource, InterfaceMetric, PrefixLength |
+            Select-Object -First 1 -ExpandProperty IPAddress
+
+        if ($ip) {
+            return $ip
+        }
+    } catch {
+    }
+
+    return $null
+}
+
+function Ensure-FirewallRule([string]$name, [int]$port) {
+    $existing = Get-NetFirewallRule -DisplayName $name -ErrorAction SilentlyContinue
+    if ($existing) {
+        Write-Ok "Guvenlik duvari kurali hazir: $name"
+        return
+    }
+
+    New-NetFirewallRule `
+        -DisplayName $name `
+        -Direction Inbound `
+        -Action Allow `
+        -Protocol TCP `
+        -LocalPort $port `
+        -Profile Private | Out-Null
+
+    Write-Ok "Guvenlik duvari kurali eklendi: $name ($port)"
 }
 
 function Require-Command([string]$name, [string]$wingetId) {
@@ -198,6 +247,21 @@ Ensure-PythonRuntime
 $pythonBootstrap = Resolve-PythonBootstrapCommand
 Write-Ok "Node.js ve Python hazir."
 
+if (-not $SkipFirewall) {
+    Write-Step "Yerel ag erisimi icin guvenlik duvari kontrol ediliyor"
+    if (Test-IsAdministrator) {
+        try {
+            Ensure-FirewallRule -name "mizan23 Frontend 3000" -port 3000
+            Ensure-FirewallRule -name "mizan23 Engine 3003" -port 3003
+        } catch {
+            Write-Warn "Guvenlik duvari kurallari eklenemedi: $($_.Exception.Message)"
+        }
+    } else {
+        Write-Warn "Yonetici yetkisi olmadigi icin guvenlik duvari kurallari otomatik eklenemedi."
+        Write-Warn "Ayni agdan erisim olmazsa RUN_ALL.bat dosyasini Yonetici olarak calistirin."
+    }
+}
+
 Write-Step "Eski portlar temizleniyor"
 Stop-PortProcess -port 3000
 Stop-PortProcess -port 3003
@@ -260,7 +324,7 @@ if (-not $NoInstall) {
 Write-Step "Servisler baslatiliyor"
 $engineProcess = Start-BackgroundProcess `
     -FilePath $venvPython `
-    -Arguments @("-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "3003") `
+    -Arguments @("-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "3003") `
     -WorkingDirectory $engineDir `
     -StdOutPath $engineOut `
     -StdErrPath $engineErr
@@ -295,10 +359,18 @@ if (-not $SkipBrowser) {
     Start-Process "http://localhost:3000" | Out-Null
 }
 
+$lanIp = Get-PrimaryLanIp
+
 Write-Host ""
 Write-Ok "Sistem hazir."
 Write-Info "Arayuz: http://localhost:3000"
 Write-Info "Engine: http://127.0.0.1:3003"
+if ($lanIp) {
+    Write-Info "Ayni agdaki cihazlar icin arayuz: http://${lanIp}:3000"
+    Write-Info "Ayni agdaki cihazlar icin engine: http://${lanIp}:3003"
+} else {
+    Write-Warn "LAN IP adresi otomatik bulunamadi. Bu durumda yerel ag erisimi icin firewall ayarlarini kontrol edin."
+}
 Write-Info "Frontend log: $frontendOut"
 Write-Info "Engine log: $engineOut"
 Write-Host ""

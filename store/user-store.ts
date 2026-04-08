@@ -47,7 +47,7 @@ export const useUserStore = create<UserState>()(
     persist(
         (set, get) => ({
             users: DEFAULT_USERS,
-            currentUser: null, // Starts as null to show profile selector
+            currentUser: null,
             hasHydrated: false,
 
             setHasHydrated: (value) => {
@@ -67,7 +67,16 @@ export const useUserStore = create<UserState>()(
 
             addUser: (name) => {
                 const trimmedName = name.trim();
-                if (!trimmedName) return;
+                if (!trimmedName) {
+                    return;
+                }
+
+                const exists = get().users.some(
+                    (user) => user.name.toLocaleLowerCase('tr-TR') === trimmedName.toLocaleLowerCase('tr-TR')
+                );
+                if (exists) {
+                    return;
+                }
 
                 const newUser: User = {
                     id: `u${Date.now()}`,
@@ -75,14 +84,16 @@ export const useUserStore = create<UserState>()(
                     role: 'user',
                     preferences: { theme: 'system' }
                 };
-                set(state => ({ users: [...state.users, newUser] }));
+                set((state) => ({ users: [...state.users, newUser] }));
             },
 
             removeUser: (userId) => {
                 const { users, currentUser } = get();
-                if (users.length <= 1) return;
+                if (users.length <= 1) {
+                    return;
+                }
 
-                const nextUsers = users.filter(user => user.id !== userId);
+                const nextUsers = users.filter((user) => user.id !== userId);
                 const nextCurrentUser = currentUser?.id === userId ? null : currentUser;
 
                 set({
@@ -92,7 +103,7 @@ export const useUserStore = create<UserState>()(
             }
         }),
         {
-            name: 'trade-intelligence-users',
+            name: 'mizan23-users',
             partialize: (state) => ({
                 users: state.users,
                 currentUser: state.currentUser

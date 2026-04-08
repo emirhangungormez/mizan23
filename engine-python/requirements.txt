@@ -1,4 +1,4 @@
-# Trade Intelligence Engine - Python Dependencies
+# mizan23 Engine - Python Dependencies
 
 # Web Framework
 fastapi>=0.104.0

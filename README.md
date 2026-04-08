@@ -1,6 +1,6 @@
-# Trade Intelligence
+# mizan23
 
-Local-first market intelligence workspace for BIST, US stocks, crypto, commodities, funds, and portfolio tracking.
+Yerelde ve yerel agda calisan piyasa zekasi calisma alani. BIST, ABD hisseleri, kripto, emtia, fon ve portfoy takibini tek uygulamada birlestirir.
 
 ## Stack
 
@@ -80,3 +80,19 @@ This checks:
 ## Disclaimer
 
 This project is a decision-support system, not investment advice.
+## Yerel Agdan Erisim
+
+`RUN_ALL.bat` artik mizan23 uygulamasini yerel ag erisimine uygun sekilde baslatir:
+
+- arayuz `0.0.0.0:3000`
+- engine `0.0.0.0:3003`
+
+Script, yonetici yetkisiyle calistirildiginda Windows Guvenlik Duvari icin gerekli kurallari da ekler. Ayni agdaki baska bir bilgisayardan baglanmak icin terminalde yazan LAN adresini kullanin:
+
+- `http://<LAN-IP>:3000`
+
+Ornek:
+
+- `http://192.168.1.30:3000`
+
+Eger diger cihaz baglanamiyorsa `RUN_ALL.bat` dosyasini `Yonetici olarak calistir` ile yeniden acin.

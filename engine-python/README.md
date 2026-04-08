@@ -1,6 +1,6 @@
-# Trade Intelligence Engine
+# mizan23 Engine
 
-Python backend for the Trade Intelligence workspace.
+Python backend for the mizan23 workspace.
 
 ## Runs on
 
