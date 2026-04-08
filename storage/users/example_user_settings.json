@@ -1,0 +1,11 @@
+{
+  "theme": "dark",
+  "accentColor": "#1e293b",
+  "dashboard": {
+    "cards": [
+      { "id": "market-summary", "color": "#fbbf24", "order": 1 },
+      { "id": "portfolio-performance", "color": "#34d399", "order": 2 },
+      { "id": "analyst-recommendations", "color": "#60a5fa", "order": 3 }
+    ]
+  }
+}

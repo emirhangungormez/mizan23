@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trade Intelligence
 
-## Getting Started
+Local-first market intelligence workspace for BIST, US stocks, crypto, commodities, funds, and portfolio tracking.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Frontend: Next.js 16 on `http://localhost:3000`
+- Python engine: FastAPI on `http://127.0.0.1:3003`
+- Data flow: frontend calls the engine through `/api/python/...`
+
+## One-click startup on Windows
+
+Use:
+
+```powershell
+.\RUN_ALL.bat
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+What it does:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- checks Node.js and Python
+- creates `engine-python\.venv` if missing
+- installs frontend and Python dependencies when lockfiles change
+- frees ports `3000` and `3003`
+- starts the frontend and Python engine
+- waits for health checks
+- runs a quick system verification
+- opens the browser automatically
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Logs are written to:
 
-## Learn More
+- `.run/frontend.out.log`
+- `.run/frontend.err.log`
+- `.run/engine.out.log`
+- `.run/engine.err.log`
 
-To learn more about Next.js, take a look at the following resources:
+## Manual startup
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Frontend:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```powershell
+npm install
+npm run dev
+```
 
-## Deploy on Vercel
+Python engine:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```powershell
+cd engine-python
+python -m venv .venv
+.\.venv\Scripts\python -m pip install -r requirements.txt
+.\.venv\Scripts\python -m uvicorn app:app --host 127.0.0.1 --port 3003
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Verification
+
+Quick system verification:
+
+```powershell
+npm run check:system
+```
+
+This checks:
+
+- engine health
+- frontend availability
+- BIST list response
+- US market response
+- crypto market response
+
+## Notes
+
+- `RUN_ALL.bat` is the recommended entry point on a fresh Windows machine.
+- The first cold start can be slower because dependency installation and data caches are created.
+- Some valuation-style fields outside BIST are intentionally category-specific:
+  - US: analyst-target-backed fair value
+  - Crypto: reference band instead of true fair value
+  - Funds and commodities: score-first decision model
+
+## Disclaimer
+
+This project is a decision-support system, not investment advice.

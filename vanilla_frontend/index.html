@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-width=1.0">
+    <title>Stonks Clone - Trade Intelligence</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lightweight Charts for the bottom chart -->
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+    <div class="window-container">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 17L9 11L13 15L21 7" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M21 7V13M21 7H15" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>stonks</span>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="refresh-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                </button>
+                <button class="primary-btn">+ Add</button>
+                <button class="icon-btn close-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- SUMMARY -->
+        <div class="summary-section">
+            <div>
+                <div class="summary-label">Total Value</div>
+                <div class="summary-value" id="total-value">₺ 0,00</div>
+            </div>
+            <div style="text-align: right;">
+                <div class="summary-label">Total P/L</div>
+                <div class="summary-value profit" id="total-pl">₺ 0,00 (0,00%)</div>
+            </div>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="controls-section">
+            <div class="control-group">
+                <label>Profile:</label>
+                <select class="control-select"><option>Demo Portföy</option></select>
+                <span class="control-link">New</span>
+                <span class="control-link">Delete</span>
+            </div>
+            <div class="control-group">
+                <label>Refresh:</label>
+                <select class="control-select"><option>5 dk</option></select>
+            </div>
+            <div class="control-group">
+                <label>Currency:</label>
+                <select class="control-select"><option>TRY</option><option>USD</option></select>
+            </div>
+            <div class="engine-state">
+                <span id="status-dot" class="dot loading"></span>
+            </div>
+        </div>
+
+        <!-- ADD NEW ROW -->
+        <div class="add-row-section">
+            <input type="text" placeholder="Symbol / name (e.g. THYAO, BTC)" class="input-field" style="flex: 2;">
+            <input type="text" placeholder="Qty" class="input-field" style="flex: 1;">
+            <input type="text" placeholder="Avg cost" class="input-field" style="flex: 1;">
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-container">
+            <table class="portfolio-table">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Symbol</th>
+                        <th>Price</th>
+                        <th>Qty</th>
+                        <th>Cost</th>
+                        <th>Value</th>
+                        <th>P/L</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="portfolio-body">
+                    <!-- Dynamic Rows -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- BOTTOM STATS -->
+        <div class="bottom-stats">
+            <div class="stats-col">
+                <div class="stats-title">Top gainers</div>
+                <div id="top-gainers-list" class="stats-list"></div>
+            </div>
+            <div class="stats-col">
+                <div class="stats-title">Top losers</div>
+                <div id="top-losers-list" class="stats-list"></div>
+            </div>
+        </div>
+
+        <!-- CHART CONTAINER -->
+        <div class="chart-section" id="chart-container">
+            <div class="chart-header">
+                <span id="chart-symbol-title">XU100 - Son 1 Ay</span>
+                <div class="chart-ranges">
+                    <button class="range-btn active">1A</button>
+                    <button class="range-btn">3A</button>
+                    <button class="range-btn">1Y</button>
+                </div>
+            </div>
+            <div id="tv-chart" style="width: 100%; height: 180px;"></div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

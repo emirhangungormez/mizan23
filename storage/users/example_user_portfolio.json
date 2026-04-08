@@ -1,0 +1,12 @@
+{
+  "user_id": "example_user",
+  "portfolios": [
+    {
+      "name": "Ana Portföy",
+      "assets": [
+        { "symbol": "THYAO", "quantity": 100, "buy_price": 250.0 },
+        { "symbol": "ASELS", "quantity": 50, "buy_price": 290.0 }
+      ]
+    }
+  ]
+}

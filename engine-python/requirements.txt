@@ -1,0 +1,27 @@
+# Trade Intelligence Engine - Python Dependencies
+
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Data Provider (ONLY allowed market data source)
+# borsapy 0.7.2 includes: TradingViewStream, Portfolio, Backtest, Screener, TCMB, Eurobond
+borsapy>=0.7.2
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+yfinance>=0.2.33
+
+# Scientific Computing
+scipy>=1.11.0
+
+# Data Validation
+pydantic>=2.0.0
+
+# Async HTTP Client
+aiohttp>=3.9.0
+
+# Environment
+python-dotenv>=1.0.0
+pdfplumber>=0.10.0
