@@ -554,7 +554,86 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
                   <div className="mt-2 text-sm text-muted-foreground">Bu sepete ilk işlemi ekleyerek varlıklarını görmeye başlayabilirsin.</div>
                 </div>
               ) : (
-                <div className="overflow-auto no-scrollbar scroll-smooth flex-1">
+                <>
+                <div className="space-y-3 p-4 lg:hidden">
+                  {positions.map((position) => {
+                    const decision = holdingDecisionMap[position.symbol];
+                    const activeTargetReturnPct = decision?.target_return_pct ?? position.targetReturnPct;
+                    return (
+                      <div key={position.symbol} className="rounded-xl border bg-background p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <Link href={`/market/${position.symbol}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
+                              {position.name}
+                            </Link>
+                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                              <Link href={`/market/${position.symbol}`} className="text-xs text-muted-foreground transition-colors hover:text-foreground">
+                                {position.symbol}
+                              </Link>
+                              <Badge variant="secondary" className="h-5 rounded-md border-0 bg-muted px-2 py-0 text-[9px] font-medium text-muted-foreground">
+                                {typeLabel(position.type)}
+                              </Badge>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setTargetAsset(position.asset)}
+                            className="rounded-lg border p-2 text-muted-foreground transition-colors hover:text-foreground"
+                            title="Hedef düzenle"
+                          >
+                            <Target className="size-4" />
+                          </button>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                          <div className="rounded-lg bg-muted/40 p-3">
+                            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Adet</div>
+                            <div className="mt-1 font-semibold">{position.quantity.toLocaleString(locale, { maximumFractionDigits: 4 })}</div>
+                          </div>
+                          <div className="rounded-lg bg-muted/40 p-3">
+                            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Güncel</div>
+                            <div className="mt-1 font-mono font-semibold">
+                              {currencySymbol}{position.currentPriceDisplay.toLocaleString(locale, { maximumFractionDigits: displayCurrency === "USD" ? 2 : 0 })}
+                            </div>
+                          </div>
+                          <div className="rounded-lg bg-muted/40 p-3">
+                            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Toplam</div>
+                            <div className="mt-1 font-mono font-semibold">
+                              {currencySymbol}{position.totalValueDisplay.toLocaleString(locale, { maximumFractionDigits: displayCurrency === "USD" ? 2 : 0 })}
+                            </div>
+                          </div>
+                          <div className="rounded-lg bg-muted/40 p-3">
+                            <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Kar/Zarar</div>
+                            <div className={cn("mt-1 font-mono font-semibold", metricTone(position.profitDisplay ?? 0))}>
+                              {position.profitDisplay === null
+                                ? "--"
+                                : `${position.profitDisplay >= 0 ? "+" : "-"}${currencySymbol}${Math.abs(position.profitDisplay).toLocaleString(locale, { maximumFractionDigits: displayCurrency === "USD" ? 2 : 0 })}`}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                          <span className={cn(
+                            "inline-flex rounded-full border px-2 py-0.5 font-medium",
+                            decision?.target_mode === "manual"
+                              ? "border-amber-500/20 bg-amber-500/10 text-amber-700"
+                              : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700"
+                          )}>
+                            Hedef +%{activeTargetReturnPct.toFixed(1)}
+                          </span>
+                          {decision?.action ? (
+                            <span className={cn("inline-flex rounded-full border px-2 py-0.5 font-medium", actionTone(decision.action))}>
+                              {decision.action}
+                            </span>
+                          ) : null}
+                          <span className="text-muted-foreground">Ağırlık %{position.weight.toFixed(1)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="hidden overflow-auto no-scrollbar scroll-smooth flex-1 lg:block">
                   <table className="min-w-[1040px] text-sm border-separate border-spacing-0">
                     <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                       <tr>
@@ -718,6 +797,7 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
             </section>
 

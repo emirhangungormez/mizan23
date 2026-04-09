@@ -329,7 +329,7 @@ export default function OutcomeDashboardPage() {
   return (
     <div className="no-scrollbar h-[calc(100vh-6rem)] overflow-y-auto">
       <div className="page-shell-wide flex flex-col gap-6">
-        <div className="page-header-row">
+        <div className="page-header-row gap-3">
           <div>
             <div className="h-5" />
             <h1 className="text-2xl font-medium tracking-tight">Sonuç Raporu</h1>
@@ -337,8 +337,8 @@ export default function OutcomeDashboardPage() {
               Her piyasa için iki katman okunur: üstte geçmiş doğrulama, altta bugünün aday listesi.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1 rounded-lg border bg-background p-1">
+          <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
+            <div className="no-scrollbar flex items-center gap-1 overflow-x-auto rounded-lg border bg-background p-1">
               {MARKETS.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -356,7 +356,7 @@ export default function OutcomeDashboardPage() {
                 );
               })}
             </div>
-            <div className="flex items-center gap-1 rounded-lg border bg-background p-1">
+            <div className="no-scrollbar flex items-center gap-1 overflow-x-auto rounded-lg border bg-background p-1">
               {HORIZONS.map((item) => (
                 <button
                   key={item.value}
@@ -370,20 +370,22 @@ export default function OutcomeDashboardPage() {
                 </button>
               ))}
             </div>
-            <button
-              onClick={() => void load()}
-              className="rounded-lg border bg-muted/30 p-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-              disabled={isLoading}
-              title="Seçili piyasa için sonucu yenile"
-            >
-              <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
-            </button>
-            <Link
-              href={`/markets/${market === "bist" ? "bist" : market}`}
-              className="rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              Listeye Dön
-            </Link>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => void load()}
+                className="rounded-lg border bg-muted/30 p-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+                disabled={isLoading}
+                title="Seçili piyasa için sonucu yenile"
+              >
+                <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
+              </button>
+              <Link
+                href={`/markets/${market === "bist" ? "bist" : market}`}
+                className="rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                Listeye Dön
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -502,7 +504,7 @@ export default function OutcomeDashboardPage() {
                   ) : (
                     <div className="space-y-2">
                       {calibrationBuckets.map((bucket) => (
-                        <div key={bucket.bucket} className="grid grid-cols-[100px_1fr_1fr_80px] items-center gap-3 rounded-xl bg-muted/30 px-3 py-3 text-sm">
+                        <div key={bucket.bucket} className="grid gap-3 rounded-xl bg-muted/30 px-3 py-3 text-sm sm:grid-cols-[100px_1fr_1fr_80px] sm:items-center">
                           <div className="font-medium">{bucket.bucket}</div>
                           <div>
                             <div className="text-[11px] text-muted-foreground">Model</div>

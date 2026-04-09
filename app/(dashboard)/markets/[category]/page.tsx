@@ -1315,7 +1315,201 @@ export default function MarketCategoryPage() {
         )}
 
         <div className="overflow-hidden rounded-xl border border-border/40 bg-card">
-          <div className="overflow-x-auto">
+          <div className="space-y-3 p-3 lg:hidden">
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="animate-pulse rounded-xl border bg-background p-4">
+                  <div className="h-4 w-24 rounded-full bg-muted/30" />
+                  <div className="mt-3 h-4 w-40 rounded-full bg-muted/30" />
+                  <div className="mt-4 h-20 rounded-xl bg-muted/20" />
+                </div>
+              ))
+            ) : (isBist ? bistRows.length === 0 : visibleData.length === 0) ? (
+              <div className="px-4 py-16 text-center">
+                <div className="flex flex-col items-center gap-3 text-muted-foreground/60">
+                  <ShieldAlert className="size-10 stroke-[1]" />
+                  <p className="text-sm font-medium">Veri bulunamadı veya filtreye uygun hisse yok.</p>
+                </div>
+              </div>
+            ) : isBist ? (
+              bistRows.map(({ item, signal }, index) => {
+                const price = getNumber(item, "last");
+                const day = getNumber(item, "change_percent");
+                const globalAlphaReference = getNumber(item.hakiki_alfa ?? {}, "global_reference_return_pct") ?? getNumber(item, "global_reference_return_pct");
+                const hakikiAlfa = getNumber(item, "hakiki_alfa_pct") ?? (item.hakiki_alfa?.hakiki_alfa_pct as number | undefined);
+                const fairValuePremium = getNumber(item.adil_deger ?? {}, "premium_discount_pct");
+                return (
+                  <div key={item.symbol} className="rounded-xl border bg-background p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link href={`/market/${item.symbol}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
+                            {item.symbol}
+                          </Link>
+                          <FavoriteListPicker symbol={item.symbol} name={item.name} market="bist" size="icon-sm" className="-ml-1 size-7" />
+                          <span className="text-[10px] text-muted-foreground">#{(index + 1).toString().padStart(2, "0")}</span>
+                        </div>
+                        {item.name && item.name !== item.symbol && (
+                          <div className="mt-1 truncate text-xs uppercase tracking-tight text-muted-foreground">{item.name}</div>
+                        )}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={addingSymbol === item.symbol || portfolios.length === 0}
+                            className={cn(
+                              "inline-flex size-8 items-center justify-center rounded-lg border transition-all",
+                              portfolios.length > 0
+                                ? "bg-background text-emerald-600 hover:border-emerald-400/40 hover:bg-emerald-500/10"
+                                : "cursor-not-allowed bg-muted/40 text-muted-foreground/40"
+                            )}
+                          >
+                            {addingSymbol === item.symbol ? <Loader2 className="size-4 animate-spin" /> : <CirclePlus className="size-4" />}
+                          </button>
+                        </DropdownMenuTrigger>
+                        {portfolios.length > 0 && (
+                          <DropdownMenuContent align="end" className="w-56">
+                            {portfolios.map((portfolio) => (
+                              <DropdownMenuItem key={portfolio.id} onClick={() => void handleQuickAdd(item, portfolio.id)} className="flex items-center justify-between gap-3">
+                                <span>{portfolio.name}</span>
+                                {portfolio.id === activePortfolioId && <span className="text-[10px] uppercase tracking-[0.14em] text-emerald-600">Aktif</span>}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        )}
+                      </DropdownMenu>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-lg bg-muted/40 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Fiyat</div>
+                        <div className="mt-1 font-mono font-semibold">{formatPrice(price, currency)}</div>
+                      </div>
+                      <div className="rounded-lg bg-muted/40 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Gün %</div>
+                        <div className={cn("mt-1 font-mono font-semibold", (day ?? 0) > 0 ? "text-emerald-500" : (day ?? 0) < 0 ? "text-rose-500" : "text-muted-foreground")}>
+                          {formatPercent(day)}
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-muted/40 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Skor</div>
+                        <div className="mt-1">
+                          <span className={cn("inline-flex min-w-14 justify-center rounded-lg border px-2.5 py-1 text-xs font-bold", scoreTone(signal.score))}>{signal.score}</span>
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-muted/40 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Aksiyon</div>
+                        <div className="mt-1 text-sm font-medium text-foreground">{simplifyActionLabel(signal.action)}</div>
+                        <div className="text-xs text-muted-foreground">{simplifyHorizonLabel(signal.horizon)}</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
+                      <div className="rounded-lg bg-muted/30 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">GA</div>
+                        <div className={cn("mt-1 font-mono font-semibold", (globalAlphaReference ?? 0) > 0 ? "text-emerald-600" : (globalAlphaReference ?? 0) < 0 ? "text-rose-600" : "text-muted-foreground")}>{formatPercent(globalAlphaReference)}</div>
+                      </div>
+                      <div className="rounded-lg bg-muted/30 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">HA</div>
+                        <div className={cn("mt-1 font-mono font-semibold", (hakikiAlfa ?? 0) > 0 ? "text-emerald-600" : (hakikiAlfa ?? 0) < 0 ? "text-rose-600" : "text-muted-foreground")}>{formatPercent(hakikiAlfa)}</div>
+                      </div>
+                      <div className="rounded-lg bg-muted/30 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Fiyat Farkı</div>
+                        <div className={cn("mt-1 font-mono font-semibold", (fairValuePremium ?? 0) > 0 ? "text-emerald-600" : (fairValuePremium ?? 0) < 0 ? "text-rose-600" : "text-muted-foreground")}>{formatPercent(fairValuePremium)}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              visibleData.map((item, index) => {
+                const price = getNumber(item, "last");
+                const day = getNumber(item, "change_percent");
+                const marketSignal = (item.market_signal && typeof item.market_signal === "object" ? item.market_signal : null) as MarketSignal | null;
+                const marketScore = marketSignal?.score;
+                const marketAction = marketSignal?.action;
+                const marketHorizon = marketSignal?.horizon;
+                const marketReason = marketSignal?.reason;
+                return (
+                  <div key={item.symbol} className="rounded-xl border bg-background p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link href={`/market/${item.symbol}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
+                            {item.symbol}
+                          </Link>
+                          <FavoriteListPicker symbol={item.symbol} name={item.name} market={category} size="icon-sm" className="-ml-1 size-7" />
+                          <span className="text-[10px] text-muted-foreground">#{(index + 1).toString().padStart(2, "0")}</span>
+                        </div>
+                        {item.name && item.name !== item.symbol && (
+                          <div className="mt-1 truncate text-xs uppercase tracking-tight text-muted-foreground">{item.name}</div>
+                        )}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={addingSymbol === item.symbol || portfolios.length === 0}
+                            className={cn(
+                              "inline-flex size-8 items-center justify-center rounded-lg border transition-all",
+                              portfolios.length > 0
+                                ? "bg-background text-emerald-600 hover:border-emerald-400/40 hover:bg-emerald-500/10"
+                                : "cursor-not-allowed bg-muted/40 text-muted-foreground/40"
+                            )}
+                          >
+                            {addingSymbol === item.symbol ? <Loader2 className="size-4 animate-spin" /> : <CirclePlus className="size-4" />}
+                          </button>
+                        </DropdownMenuTrigger>
+                        {portfolios.length > 0 && (
+                          <DropdownMenuContent align="end" className="w-56">
+                            {portfolios.map((portfolio) => (
+                              <DropdownMenuItem key={portfolio.id} onClick={() => void handleQuickAdd(item, portfolio.id)} className="flex items-center justify-between gap-3">
+                                <span>{portfolio.name}</span>
+                                {portfolio.id === activePortfolioId && <span className="text-[10px] uppercase tracking-[0.14em] text-emerald-600">Aktif</span>}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        )}
+                      </DropdownMenu>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-lg bg-muted/40 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Fiyat</div>
+                        <div className="mt-1 font-mono font-semibold">{formatPrice(price, currency)}</div>
+                      </div>
+                      <div className="rounded-lg bg-muted/40 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Gün %</div>
+                        <div className={cn("mt-1 font-mono font-semibold", (day ?? 0) > 0 ? "text-emerald-500" : (day ?? 0) < 0 ? "text-rose-500" : "text-muted-foreground")}>
+                          {formatPercent(day)}
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-muted/40 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Skor</div>
+                        <div className="mt-1">
+                          <span className={cn("inline-flex min-w-14 justify-center rounded-lg border px-2.5 py-1 text-xs font-bold", scoreTone(marketScore ?? 0))}>{marketScore ?? "-"}</span>
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-muted/40 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Aksiyon</div>
+                        <div className="mt-1 text-sm font-medium text-foreground">{marketAction ? simplifyActionLabel(marketAction) : "-"}</div>
+                        <div className="text-xs text-muted-foreground">{marketHorizon ? simplifyHorizonLabel(marketHorizon) : "-"}</div>
+                      </div>
+                    </div>
+
+                    {marketReason && (
+                      <div className="mt-3 rounded-lg bg-muted/30 p-3 text-xs leading-5 text-muted-foreground">
+                        {marketReason}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="hidden overflow-x-auto lg:block">
           <table className="w-full min-w-[980px] text-sm border-collapse">
             <thead>
               <tr className="bg-muted/20 border-b border-border/30 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">

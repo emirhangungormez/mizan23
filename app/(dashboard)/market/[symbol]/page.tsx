@@ -23,7 +23,7 @@ import { StockTreemap } from "@/components/charts/stock-treemap";
 import { FundamentalGrid } from "@/components/market/fundamental-grid";
 import { Info, Building2, Star, Gauge, Sparkles, Waves, ShieldCheck } from "lucide-react";
 import { CompanyFinancialsView } from "@/components/company/company-financials-view";
-import { CompanyNavbar } from "@/components/company/company-navbar";
+import { CompanyNavbar, COMPANY_NAV_ITEMS } from "@/components/company/company-navbar";
 import { CandlestickChart } from "@/components/charts/candlestick-chart";
 import { FastInfoCard } from "@/components/company/fast-info-card";
 import { SupertrendIndicator } from "@/components/company/supertrend-indicator";
@@ -514,14 +514,14 @@ export default function AssetDetailPage() {
         <div className="w-full h-full flex flex-col overflow-hidden bg-background">
             {/* COMPANY HEADER (Fintables Style) */}
             <div className="border-b bg-card shrink-0">
-                <div className="mx-auto flex w-full max-w-[1760px] items-center justify-between px-4 py-4 lg:px-6">
-                    <div className="flex items-center gap-4">
+                <div className="mx-auto flex w-full max-w-[1760px] flex-col gap-4 px-4 py-4 lg:px-6 xl:flex-row xl:items-center xl:justify-between">
+                    <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                         <div className="size-12 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
                             {symbol.substring(0, 2)}
                         </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-2xl font-bold tracking-tight">{symbol}</h1>
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{symbol}</h1>
                                 <FavoriteListPicker
                                     symbol={symbol}
                                     name={assetDisplayName}
@@ -529,13 +529,13 @@ export default function AssetDetailPage() {
                                     size="icon"
                                 />
                             </div>
-                            <p className="text-sm text-muted-foreground font-medium">{assetDisplayName}</p>
+                            <p className="truncate text-sm text-muted-foreground font-medium">{assetDisplayName}</p>
                         </div>
                     </div>
 
-                    <div className="text-right">
-                        <div className="flex items-baseline justify-end gap-3">
-                            <div className="flex flex-col items-end mr-4">
+                    <div className="w-full xl:w-auto">
+                        <div className="flex flex-wrap items-end justify-start gap-3 text-left xl:justify-end xl:text-right">
+                            <div className="flex flex-col items-start xl:mr-4 xl:items-end">
                                 <span className="text-[10px] text-muted-foreground uppercase">Taban / Tavan</span>
                                 <div className="flex gap-2 font-mono text-xs">
                                     <span className="text-red-500">{floorPrice ? floorPrice.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '---'}</span>
@@ -544,22 +544,42 @@ export default function AssetDetailPage() {
                                 </div>
                             </div>
 
-                            <span className="text-sm text-muted-foreground font-medium">G</span>
-                            <span className="text-3xl font-bold font-mono">
+                            <span className="text-sm text-muted-foreground font-medium xl:ml-2">G</span>
+                            <span className="text-2xl font-bold font-mono sm:text-3xl">
                                 {currentPrice.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                             <span className={cn(
-                                "text-lg font-bold font-mono",
+                                "text-base font-bold font-mono sm:text-lg",
                                 (changePercent >= 0) ? "text-emerald-500" : "text-red-500"
                             )}>
                                 %{Math.abs(changePercent).toFixed(2)}
                             </span>
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                        <div className="mt-1 text-[10px] text-muted-foreground font-mono">
                             {new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}, {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                     </div>
                 </div>
+                {assetType === "STOCK" && (
+                    <div className="border-t px-4 py-2 md:hidden lg:px-6">
+                        <div className="no-scrollbar flex gap-2 overflow-x-auto">
+                            {COMPANY_NAV_ITEMS.map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setActiveSection(item.id)}
+                                    className={cn(
+                                        "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                                        activeSection === item.id
+                                            ? "border-primary/40 bg-primary/10 text-primary"
+                                            : "border-border bg-background text-muted-foreground hover:bg-muted"
+                                    )}
+                                >
+                                    {item.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="mx-auto flex w-full max-w-[1760px] flex-1 overflow-hidden px-4 lg:px-6">
@@ -579,7 +599,7 @@ export default function AssetDetailPage() {
                     {["overview", "chart", "score", "financials"].includes(activeSection) && (
                         <div className="h-full">
                             {/* Stats Bar */}
-                            <div className="border-b bg-card/30 px-6 py-2.5 flex items-center gap-8 text-xs font-medium overflow-x-auto">
+                            <div className="border-b bg-card/30 px-4 py-2.5 flex items-center gap-6 overflow-x-auto text-xs font-medium lg:px-6">
                                 <StatItem label="Dönem Yüksek" value={stats.high.toLocaleString(locale, { minimumFractionDigits: 2 })} color="text-emerald-500" />
                                 <StatItem label="Dönem Düşük" value={stats.low.toLocaleString(locale, { minimumFractionDigits: 2 })} color="text-red-500" />
                                 <StatItem
@@ -594,7 +614,7 @@ export default function AssetDetailPage() {
                                 <StatItem label="Önceki Kapanış" value={previousClose.toLocaleString(locale, { minimumFractionDigits: 2 })} />
                             </div>
 
-                            <div className="p-6 space-y-6">
+                            <div className="space-y-6 p-4 lg:p-6">
                                 {activeSection === "overview" && assetType === "STOCK" && (
                                     <div className="grid grid-cols-1 gap-4 xl:grid-cols-4 md:grid-cols-2">
                                         <div className="rounded-2xl border bg-card p-5 xl:col-span-2">
@@ -836,7 +856,7 @@ export default function AssetDetailPage() {
                                 <>
                                 {/* Chart Header */}
                                 <div className="rounded-2xl border bg-card p-4">
-                                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-3">
                                                 <h2 className="text-lg font-bold">{symbol} Grafik Merkezi</h2>
@@ -865,7 +885,7 @@ export default function AssetDetailPage() {
                                             </p>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-2 text-sm md:min-w-[360px]">
+                                        <div className="grid w-full grid-cols-2 gap-2 text-sm lg:min-w-[360px] lg:max-w-[420px]">
                                             <div className="rounded-xl border bg-background px-3 py-2.5">
                                                 <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Son fiyat</div>
                                                 <div className="mt-1 font-mono font-semibold">
@@ -893,10 +913,10 @@ export default function AssetDetailPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                <div className="flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
                                     <div className="flex items-center gap-3">
                                         <h2 className="text-lg font-bold">{chartSurface === "tradingview" ? `${symbol} TradingView` : `${symbol} Yerel Grafik`}</h2>
-                                        <div className={cn("flex items-center gap-1 bg-muted p-1 rounded-md", chartSurface !== "native" && "hidden")}>
+                                        <div className={cn("no-scrollbar flex items-center gap-1 overflow-x-auto rounded-md bg-muted p-1", chartSurface !== "native" && "hidden")}>
                                             <Button
                                                 variant={chartType === "line" ? "secondary" : "ghost"}
                                                 size="xs"

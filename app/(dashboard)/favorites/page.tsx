@@ -590,7 +590,102 @@ export default function FavoritesManagementPage() {
                 </Button>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="space-y-3 p-4 lg:hidden">
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <div key={index} className="animate-pulse rounded-xl border bg-background p-4">
+                      <div className="h-4 w-24 rounded-full bg-muted/30" />
+                      <div className="mt-3 h-4 w-40 rounded-full bg-muted/30" />
+                      <div className="mt-4 h-16 rounded-xl bg-muted/20" />
+                    </div>
+                  ))
+                ) : rows.length === 0 ? (
+                  <div className="rounded-xl border bg-background px-4 py-10 text-center text-sm text-muted-foreground">
+                    Bu listede henüz varlık yok.
+                  </div>
+                ) : (
+                  rows.map((row) => (
+                    <div key={`${row.market}-${row.symbol}`} className="rounded-xl border bg-background p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Link href={`/market/${row.symbol}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
+                              {row.symbol}
+                            </Link>
+                            <FavoriteListPicker
+                              symbol={row.symbol}
+                              name={row.name}
+                              market={row.market}
+                              size="icon-sm"
+                              className="-ml-1 size-7"
+                            />
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]",
+                                marketBadgeTone(row.market),
+                              )}
+                            >
+                              {MARKET_LABELS[row.market]}
+                            </Badge>
+                          </div>
+                          <div className="mt-1 truncate text-xs uppercase tracking-tight text-muted-foreground">
+                            {row.name || row.symbol}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void removeItemFromList(selectedList.id, row.symbol, row.market)}
+                          className="rounded-lg border p-2 text-muted-foreground transition-colors hover:text-rose-600"
+                          title="Listeden cikar"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-lg bg-muted/40 p-3">
+                          <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Fiyat</div>
+                          <div className="mt-1 font-mono font-semibold">{formatPrice(row.price, row.market)}</div>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-3">
+                          <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Gün %</div>
+                          <div className={cn("mt-1 font-mono font-semibold", comparisonTone(row.changePercent))}>
+                            {formatPercent(row.changePercent)}
+                          </div>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-3">
+                          <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Skor</div>
+                          <div className="mt-1">
+                            <span
+                              className={cn(
+                                "inline-flex min-w-14 justify-center rounded-lg border px-2.5 py-1 text-xs font-bold",
+                                scoreTone(row.score),
+                              )}
+                            >
+                              {row.score != null ? Math.round(row.score) : "-"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-3">
+                          <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Aksiyon</div>
+                          <div className="mt-1 text-sm font-medium text-foreground">{row.action || "-"}</div>
+                          <div className="text-xs text-muted-foreground">{row.horizon || "-"}</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between text-xs">
+                        <div className="text-muted-foreground">
+                          Kıyas: <span className={cn("font-medium", comparisonTone(row.comparisonDelta))}>{formatPercent(row.comparisonDelta)}</span>
+                        </div>
+                        <div className="text-muted-foreground">{formatDate(row.addedAt)}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="hidden overflow-x-auto lg:block">
               <table className="w-full min-w-[980px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border/30 bg-muted/20 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
