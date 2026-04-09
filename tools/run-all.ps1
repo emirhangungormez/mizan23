@@ -457,7 +457,17 @@ function Wait-HttpReady(
     [string]$StdOutPath = ""
 ) {
     $deadline = (Get-Date).AddSeconds($timeoutSeconds)
+    $startedAt = Get-Date
+    $lastProgressSecond = -10
+    Write-Info "$label bekleniyor: $url"
+
     while ((Get-Date) -lt $deadline) {
+        $elapsedSeconds = [int]((Get-Date) - $startedAt).TotalSeconds
+        if (($elapsedSeconds - $lastProgressSecond) -ge 10) {
+            $lastProgressSecond = $elapsedSeconds
+            Write-Info "$label hazir degil, bekleniyor... (${elapsedSeconds}s)"
+        }
+
         if ($Process) {
             try {
                 if ($Process.HasExited) {
@@ -487,7 +497,19 @@ function Wait-HttpReady(
         }
         Start-Sleep -Seconds 2
     }
-    throw "$label hazir olmadi: $url"
+
+    $errorTail = Get-LogTail -path $StdErrPath
+    $outputTail = Get-LogTail -path $StdOutPath
+    $detail = $errorTail
+    if (-not $detail) {
+        $detail = $outputTail
+    }
+
+    if ($detail) {
+        throw "$label zaman asimina ugradi. Son log:`n$detail"
+    }
+
+    throw "$label zaman asimina ugradi: $url"
 }
 
 function Start-BackgroundProcess {
