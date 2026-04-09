@@ -1,8 +1,14 @@
 # mizan23
 
-Local-first market intelligence and portfolio decision-support platform.
+![Local First](https://img.shields.io/badge/local--first-yes-16a34a)
+![Markets](https://img.shields.io/badge/markets-BIST%20%7C%20US%20%7C%20Crypto%20%7C%20Commodities%20%7C%20Funds-0f172a)
+![Model](https://img.shields.io/badge/model-deterministic%20quant-2563eb)
+![Stack](https://img.shields.io/badge/stack-Next.js%20%2B%20FastAPI-7c3aed)
+![Data](https://img.shields.io/badge/BIST-borsapy-059669)
 
-`mizan23` transforms raw market data into score, probability, action, and historical validation across BIST, US equities, crypto, commodities, funds, and FX.
+Local-first market intelligence, stock analysis, quant scoring engine, recommendation workflow, and portfolio decision-support platform.
+
+`mizan23` turns raw market data into score, probability, action, and historical validation across BIST, US equities, crypto, commodities, funds, and FX.
 
 ## Language
 
@@ -15,76 +21,75 @@ Local-first market intelligence and portfolio decision-support platform.
 
 # Türkçe
 
-## mizan23 Nedir?
+## 1. Kısa Tanım
 
-`mizan23`, yalnızca fiyat gösteren bir piyasa ekranı değildir. Sistem;
+`mizan23`, yalnızca fiyat takip ekranı değildir. Bu sistem:
 
-- piyasa verisini toplar
-- bu veriyi proprietary skor katmanlarına dönüştürür
-- skoru olasılık ve aksiyona çevirir
-- sonuçları tarihsel olarak doğrular
-- portföy, favoriler ve profil bazlı kullanım akışı ile birleştirir
+- piyasaları tarar
+- varlıkları skorlar
+- skoru olasılığa çevirir
+- aksiyon önerisi üretir
+- portföy hedef planı kurar
+- geçmişte kendi tahminlerinin doğru olup olmadığını ölçer
 
-Kısacası amaç, parçalı araçlar yerine tek bir karar çalışma alanı sunmaktır.
+Amaç, yatırımcının ya da analiz kullanıcısının farklı araçlar arasında dağılmadan tek bir karar çalışma alanında kalmasını sağlamaktır.
 
-## Neden Var?
+## 2. Hangi Problemi Çözüyor?
 
-Çoğu piyasa aracı şu alanlardan yalnızca birinde iyidir:
+Çoğu piyasa aracı aşağıdakilerden sadece bir veya ikisini iyi yapar:
 
-- fiyat takibi
-- watchlist
+- fiyat izleme
+- watchlist / favori listesi
 - grafik
-- tarama
+- screener
 - portföy takibi
-- geçmiş performans doğrulaması
+- geçmiş doğrulama
 
-`mizan23`, bunları tek sistemde birleştirmek için geliştirildi.
+`mizan23`, bu parçalı deneyimi birleştirir. Sistem, “hangi varlık güçlü?”, “hangi zaman ufkunda güçlü?”, “mevcut portföy pozisyonum hâlâ modelle uyumlu mu?” ve “bu model geçmişte gerçekten işe yaradı mı?” sorularına tek yerden cevap vermeye çalışır.
 
-Amaç “sihirli tahmin” üretmek değil; şeffaf, denetlenebilir ve tekrar edilebilir bir karar destek sistemi kurmaktır.
+## 3. Neden Farklı?
 
-## Neden Farklı?
-
-`mizan23` sıradan bir screener veya dashboard değildir. Ana farkları:
+`mizan23`’ü sıradan bir piyasa panelinden ayıran ana farklar:
 
 1. Zaman ufku odaklıdır.
-   Sadece “güçlü/zayıf” demez; sinyalin hangi ufka ait olduğunu yorumlamaya çalışır.
+   Sadece “güçlü” demez; sinyalin 1 gün mü, 5 gün mü, 30 gün mü, 6 ay mı, 1 yıl mı daha uygun olduğuna bakar.
 
-2. Deterministik yapıdadır.
-   Kara kutu AI yerine açık formüller, skor aileleri, güven cezaları ve sonuç takibi kullanır.
+2. Deterministik ve denetlenebilirdir.
+   Kara kutu AI yerine açık formüller, skor aileleri, ceza kuralları ve doğrulama mantığı kullanır.
 
 3. Sonuç takibi yapar.
-   Sadece öneri üretmez; geçmişte bu önerilerin ne kadar doğru olduğunu da ölçer.
+   Sadece öneri üretmez; bu önerilerin geçmişte ne kadar doğru olduğunu ölçer.
 
 4. Piyasaya özel mantık kullanır.
-   BIST, ABD, kripto, emtia ve fonları tek bir yüzeysel formüle zorlamaz.
+   BIST, ABD, kripto, emtia ve fonlar tek bir yüzeysel formüle zorlanmaz.
 
 5. Local-first yaklaşımı vardır.
-   Sistem yerelde veya aynı ağ içinde çalışacak şekilde tasarlanmıştır.
+   Sistem kullanıcıya yakın çalışır; kişisel kullanım, aile kullanımı veya aynı ağdaki küçük ekipler için uygundur.
 
-## Kimler İçin?
+## 4. Kimler İçin Uygun?
 
 Bu proje özellikle şunlar için uygundur:
 
 - aktif yatırımcılar
 - çoklu zaman ufkunda çalışan traderlar
 - piyasaya yönelik ürün geliştiren yazılımcılar
-- açık formülleri tercih eden quant-meraklı kullanıcılar
-- aynı ağda ortak sistem kullanan küçük ekipler veya aileler
+- quant mantığını anlamak isteyen kullanıcılar
+- aynı ağ içinde ortak bir sistem kullanan küçük gruplar
 
 Şunlar için öncelikli olarak tasarlanmadı:
 
 - yüksek frekanslı işlem
 - broker otomasyonu
-- kurumsal OMS/EMS sistemleri
-- tam yönetilen SaaS dağıtımı
+- kurumsal OMS / EMS katmanı
+- tam yönetilen SaaS modeli
 
-## Sistem Ne Üretir?
+## 5. Sistem Ne Üretir?
 
-Sistem aşağıdaki türde çıktılar üretir:
+Sistem aşağıdaki türde karar çıktıları üretir:
 
 - `BIST / 5 Gün / Skor 82 / Olasılık 0.86 / Aksiyon: Güçlü`
 - `ABD / UNH / Adil Değer 360 / Fiyat Farkı +9% / İzle`
-- `Kripto / SOL / BTC'ye göre alfa +1.2 / Referans bant üzerinde`
+- `Kripto / SOL / BTC’ye göre alfa +1.2 / Referans bant üzerinde`
 - `Portföy / THYAO / Hedef %17 / Hedefe kadar tut`
 - `Sonuç raporu / 1 Gün modeli / yön isabeti %61 / alfa isabeti %57`
 
@@ -98,14 +103,14 @@ Yani sistem yalnızca veri göstermez; yorumlanabilir karar çıktısı üretir:
 - aksiyon
 - tarihsel doğrulama
 
-## Bu Proje Ne Değildir?
+## 6. Bu Proje Ne Değildir?
 
 - yatırım tavsiyesi değildir
 - kesin tahmin sunduğunu iddia etmez
 - “AI her şeyi bilir” yaklaşımıyla kurulmamıştır
 - doğrudan emir iletim veya broker platformu değildir
 
-## Ürün Görselleri
+## 7. Ürün Görselleri
 
 ### Anasayfa
 
@@ -119,18 +124,133 @@ Yani sistem yalnızca veri göstermez; yorumlanabilir karar çıktısı üretir:
 
 ![Asset Detail](./docs/images/asset-detail-financials.png)
 
-## Desteklenen Piyasalar
+## 8. Desteklenen Piyasalar
 
 | Piyasa | Kapsam | Ana Kullanım |
 |---|---|---|
-| BIST | Hisse, endeks, sektör, proprietary skorlar | Ana karar motoru |
-| ABD | Hisse evreni, history ve analist hedefleri | Skor, aksiyon, adil değer kıyası |
+| BIST | Hisse, endeks, sektör, proprietary skor ailesi | Ana karar motoru |
+| ABD | Hisse evreni, history, analist hedefleri | Skor, aksiyon, adil değer kıyası |
 | Kripto | Büyük ve orta ölçekli çiftler | Skor, BTC göreli alfa, referans bant |
 | Emtia | Enerji, metal, kıymetli emtia | Trend ve taktik yorum |
 | Fon | Yatırım ve emeklilik fonları | İstikrar ve dönemsel performans |
 | Döviz / FX | Temel döviz sepeti | Takip ve çapraz piyasa bağlamı |
 
-## Mimari
+## 9. Metodoloji Özeti
+
+Sistemin genel akışı şudur:
+
+`veri -> özellik -> skor -> olasılık -> aksiyon -> sonuç doğrulama`
+
+Bu yapı akademik olarak şu fikirlere yakındır:
+
+- feature engineering
+- cross-market relative strength
+- regime awareness
+- risk-adjusted ranking
+- walk-forward validation
+- calibration-aware decision support
+
+### 9.1 Kullanılan ana özellik katmanları
+
+- fiyat geçmişi
+- getiri serileri
+- trend yapısı
+- teknik özet
+- volatilite
+- entropy
+- hurst
+- rejim
+- hacim / likidite
+- analist hedefleri
+- adil değer / referans bant
+- hakiki alfa
+- portföy işlem geçmişi
+
+### 9.2 Olasılık katmanı
+
+Ham skor doğrudan son karar değildir. Sistem skoru, ufuk bazlı olasılık alanlarına dönüştürür:
+
+- `probability_positive`
+- `probability_outperform`
+- `expected_return_pct`
+- `expected_excess_return_pct`
+- `risk_forecast_pct`
+- `calibration_confidence`
+
+Bu katman, kullanıcıya sadece “güçlü” demek yerine, sinyalin güvenini ve taşıdığı beklenen getiriyi göstermeyi amaçlar.
+
+## 10. Proprietary Formül Aileleri
+
+### 10.1 BIST ana skor ailesi
+
+| Skor | Amaç | Özet mantık |
+|---|---|---|
+| `Hakiki Alfa (HA)` | Göreli üstün performans ölçümü | Hissenin referans servet / benchmark sepetine göre üstünlüğü |
+| `Trend Skoru` | Trend teyidi | Fiyat konumu, momentum, yön ve yapı |
+| `Likidite Skoru` | Uygulanabilirlik | Hacim, işlem kalitesi, hareketin taşınabilirliği |
+| `Kalite Skoru` | Yapısal sağlık | Finansal ve davranışsal dayanıklılık |
+| `Fırsat Skoru` | Aksiyon kalitesi | Trend, kalite, alfa ve ceza/ödül katmanlarının birleşimi |
+| `Trade Skoru` | Kısa vade uygunluğu | Daha çevik, daha yakın dönem odaklı yorum |
+| `Uzun Vade Skoru` | Taşıma kalitesi | Daha düşük gürültü, daha yüksek yapısal kalite vurgusu |
+| `Radar Skoru` | İzleme adayı üretimi | Erken sinyal ve gözlem listesi mantığı |
+
+### 10.2 Sadeleştirilmiş karar formu
+
+En genel haliyle sistemin karar mantığı şu yapıya benzer:
+
+`Toplam Sinyal = Trend + Hakiki Alfa + Kalite + Likidite - ceza katmanları`
+
+Ceza katmanları şunları içerebilir:
+
+- aşırı uzama
+- düşük güven
+- eksik veri
+- zayıf rejim
+
+### 10.3 Hakiki Alfa mantığı
+
+Hakiki Alfa, bir varlığın sadece nominal olarak yükselip yükselmediğine değil, referans servet sepetine göre gerçekten pay kazanıp kazanmadığına bakar.
+
+Sade form:
+
+`HA = varlık getirisi - referans sepet getirisi`
+
+Detaylı not:
+
+- [`docs/hakiki-alfa-v1.md`](./docs/hakiki-alfa-v1.md)
+
+### 10.4 Piyasa türüne göre fark
+
+BIST dışı piyasalarda aynı formül birebir kopyalanmaz:
+
+- kriptoda `referans bant`, `BTC’ye göre alfa`, `uzama riski`
+- emtiada `trend + taktik hareket + korunma mantığı`
+- fonlarda `istikrar + büyüme + dönemsel süreklilik`
+
+kullanılır.
+
+Detaylı teknik notlar:
+
+- [`docs/trend-skoru-v1.md`](./docs/trend-skoru-v1.md)
+- [`docs/firsat-skoru-v1.md`](./docs/firsat-skoru-v1.md)
+- [`docs/proprietary-score-family-v1.md`](./docs/proprietary-score-family-v1.md)
+- [`docs/tahmin-motoru-v1.md`](./docs/tahmin-motoru-v1.md)
+- [`docs/proprietary-outcome-tracker-v1.md`](./docs/proprietary-outcome-tracker-v1.md)
+
+## 11. Veri Kaynakları
+
+| Kaynak | Kullanım | Piyasalar | Not |
+|---|---|---|---|
+| `borsapy` | BIST veri evreni, tarama, şirket/piyasa yapısı | BIST | BIST tarafındaki ana yapı taşlarından biri |
+| `yfinance` | History, benchmark, analist hedefi, zenginleştirme | ABD, kripto, emtia | Cache ve snapshot ile korunur |
+| Yerel snapshot’lar | Sonuç raporu ve hızlı tekrar kullanım | Tüm desteklenen piyasalar | Engine üretir |
+| Yerel JSON / SQLite | Profil, favori, portföy, kalıcı durum | Uygulama geneli | Local-first yaklaşım |
+
+Teşekkür:
+
+Özellikle BIST tarafında bu platformun daha sistematik gelişmesini mümkün kılan `borsapy` ekosisteminin geliştiricilerine teşekkür ederiz.
+
+## 12. Mimari
 
 Sistem iki ana katmandan oluşur:
 
@@ -158,109 +278,21 @@ Ana klasörler:
 - [`engine-python/storage`](./engine-python/storage)
 - [`docs`](./docs)
 
-## Veri Kaynakları
+## 13. Akademik / Teknik Okuma Yolu
 
-| Kaynak | Kullanım | Piyasalar | Not |
-|---|---|---|---|
-| `borsapy` | BIST veri evreni, tarama, şirket/piyasa yapısı | BIST | BIST tarafındaki ana yapı taşlarından biri |
-| `yfinance` | History, benchmark, analist hedefi, zenginleştirme | ABD, kripto, emtia | Cache ve snapshot ile korunur |
-| Yerel snapshot'lar | Sonuç raporu ve hızlı tekrar kullanım | Tüm desteklenen piyasalar | Engine üretir |
-| Yerel JSON / SQLite | Profil, favori, portföy, kalıcı durum | Uygulama geneli | Local-first yaklaşım |
+Bu repo bir AI, araştırmacı ya da teknik inceleyici tarafından okunacaksa şu sırayla incelenmesi önerilir:
 
-Teşekkür:
+1. Bu README
+2. [`docs/sistem-raporu-tr.md`](./docs/sistem-raporu-tr.md)
+3. [`docs/proprietary-score-family-v1.md`](./docs/proprietary-score-family-v1.md)
+4. [`docs/hakiki-alfa-v1.md`](./docs/hakiki-alfa-v1.md)
+5. [`engine-python/scoring`](./engine-python/scoring)
+6. [`engine-python/api`](./engine-python/api)
+7. [`app/(dashboard)`](./app/(dashboard))
 
-Özellikle BIST tarafında bu platformun daha sistematik gelişmesini mümkün kılan `borsapy` ekosisteminin geliştiricilerine teşekkür ederiz.
+Bu sıralama, sistemin hem ürün mantığını hem de hesaplama omurgasını anlamayı kolaylaştırır.
 
-## Sistem Hangi Veri Türlerini Kullanır?
-
-- fiyat geçmişi
-- getiri serileri
-- trend yapısı
-- teknik özet
-- volatilite
-- entropy
-- hurst
-- rejim
-- hacim / likidite
-- analist hedefleri
-- adil değer / referans bant
-- hakiki alfa
-- portföy işlem geçmişi
-
-## Proprietary Formül Aileleri
-
-Temel yaklaşım:
-
-`veri -> skor -> olasılık -> aksiyon`
-
-BIST tarafındaki ana skor aileleri:
-
-- `Hakiki Alfa`
-- `Trend Skoru`
-- `Likidite Skoru`
-- `Kalite Skoru`
-- `Fırsat Skoru`
-- `Trade Skoru`
-- `Uzun Vade Skoru`
-- `Radar Skoru`
-
-Olasılık katmanı şu alanları üretir:
-
-- `probability_positive`
-- `probability_outperform`
-- `expected_return_pct`
-- `expected_excess_return_pct`
-- `risk_forecast_pct`
-- `calibration_confidence`
-
-Detaylı teknik notlar:
-
-- [`docs/hakiki-alfa-v1.md`](./docs/hakiki-alfa-v1.md)
-- [`docs/trend-skoru-v1.md`](./docs/trend-skoru-v1.md)
-- [`docs/firsat-skoru-v1.md`](./docs/firsat-skoru-v1.md)
-- [`docs/proprietary-score-family-v1.md`](./docs/proprietary-score-family-v1.md)
-- [`docs/tahmin-motoru-v1.md`](./docs/tahmin-motoru-v1.md)
-
-## Tavsiye Motoru
-
-Tavsiye motoru dönem bazlı çalışır. Ana ufuklar:
-
-- `1 Gün`
-- `5 Gün`
-- `30 Gün`
-- `6 Ay`
-- `1 Yıl`
-
-Karar üretiminde kullanılan ana bileşenler:
-
-- skor
-- olasılık
-- beklenen getiri
-- beklenen alfa
-- risk tahmini
-- veri güveni
-
-## Portföy ve Sonuç Raporu
-
-Portföy tarafında sistem:
-
-- alış/satış işlemlerini saklar
-- canlı kâr/zarar takibi yapar
-- hedef planı üretir
-- pozisyon bazlı karar üretir
-- kapanmış işlemlerden istatistiksel sepet raporu çıkarır
-
-Sonuç raporu tarafında:
-
-- bugünün aday listesi
-- geçmiş doğrulama
-- doğru / yanlış tahmin
-- alfa isabeti
-- skora uyan ve ters davranan varlıklar
-
-görülebilir.
-
-## Kurulum
+## 14. Kurulum
 
 ### Gereksinimler
 
@@ -285,7 +317,7 @@ Başlatıcı şunları yapmaya çalışır:
 - frontend ve backend'i başlatır
 - sağlık kontrolü yapar
 
-## LAN Kullanımı
+## 15. LAN Kullanımı
 
 `mizan23`, aynı ağ içindeki cihazlarda açılabilir.
 
@@ -296,7 +328,7 @@ Başlatıcı şunları yapmaya çalışır:
 
 Bu yapı parola tabanlı çok kullanıcılı kimlik sistemi değildir; profil bazlı ayrım mantığıyla çalışır.
 
-## Güvenlik Notu
+## 16. Güvenlik Notu
 
 Bu proje şu an:
 
@@ -306,9 +338,16 @@ Bu proje şu an:
 
 senaryoları için uygundur.
 
-Kurumsal çok kullanıcılı dağıtım için ayrıca kimlik doğrulama, rol bazlı yetki ve audit log gereklidir.
+Kurumsal çok kullanıcılı dağıtım için ayrıca:
 
-## Sorun Giderme
+- kimlik doğrulama
+- rol bazlı yetki
+- audit log
+- daha güçlü veri koruması
+
+gerekir.
+
+## 17. Sorun Giderme
 
 ### `Sağlık kontrolleri bekleniyor`
 
@@ -320,15 +359,32 @@ Bu genelde şu anlama gelir:
 
 Başlatıcı artık hangi servisin beklendiğini ve gerekirse son log satırlarını gösterir.
 
+## 18. Issues, Öneriler ve Katkı
+
+Bu repo için:
+
+- hata bildirimi açabilirsiniz
+- öneri sunabilirsiniz
+- formül iyileştirme fikirleri paylaşabilirsiniz
+- veri kaynağı veya metodoloji önerisinde bulunabilirsiniz
+
+Lütfen GitHub Issues üzerinden:
+
+- hatanın ne olduğunu
+- hangi ekran veya modülde olduğunu
+- mümkünse ekran görüntüsü ve log çıktısını
+
+paylaşın.
+
 ---
 
 # English
 
-## What Is mizan23?
+## 1. What Is mizan23?
 
 `mizan23` is a local-first market intelligence platform that turns raw market data into score, probability, action, and historical validation.
 
-It is designed to bring these workflows into one place:
+It is designed to bring the following workflows into one place:
 
 - market screening
 - recommendation generation
@@ -337,9 +393,9 @@ It is designed to bring these workflows into one place:
 - favorites and watchlists
 - outcome validation
 
-## Why It Exists
+## 2. Why Does It Exist?
 
-Most market tools do one of these well, but not all together:
+Most market tools do one thing well, but not everything together:
 
 - price monitoring
 - charting
@@ -352,16 +408,16 @@ Most market tools do one of these well, but not all together:
 
 The goal is not to produce magical AI predictions. The goal is to build a transparent, inspectable, and repeatable market decision system.
 
-## Why It Is Different
+## 3. Why Is It Different?
 
 1. It is horizon-aware.
-   It tries to map signals to time horizons, not just binary “strong/weak” labels.
+   It tries to map signals to time horizons instead of using only binary strong/weak labels.
 
 2. It is deterministic.
-   It uses explicit formulas, score families, confidence penalties, and validation logic instead of opaque black-box output.
+   It uses explicit formulas, score families, confidence penalties, and validation logic rather than opaque black-box output.
 
 3. It tracks outcomes.
-   It does not stop at recommendations; it also checks whether those calls were statistically valid.
+   It does not stop at recommendations; it also checks whether those recommendations were statistically valid later.
 
 4. It uses market-specific logic.
    BIST, US equities, crypto, commodities, and funds are not forced into one naïve formula.
@@ -369,7 +425,7 @@ The goal is not to produce magical AI predictions. The goal is to build a transp
 5. It is local-first.
    It is designed to run on your machine or local network.
 
-## Who It Is For
+## 4. Who Is It For?
 
 This project is primarily for:
 
@@ -379,7 +435,7 @@ This project is primarily for:
 - quant-curious users who prefer transparent formulas
 - small local teams or families sharing one system
 
-## What The Output Looks Like
+## 5. What Does It Output?
 
 Typical outputs include:
 
@@ -389,14 +445,24 @@ Typical outputs include:
 - `Portfolio / THYAO / Target 17% / Hold to target`
 - `Outcome report / 1-day model / direction hit-rate 61% / alpha hit-rate 57%`
 
-## What This Project Is Not
+The platform is meant to produce interpretable decision outputs:
+
+- score
+- probability
+- expected return
+- expected alpha
+- risk forecast
+- action
+- historical validation
+
+## 6. What This Project Is Not
 
 - not financial advice
 - not a certainty engine
 - not an AI oracle
 - not a broker execution platform
 
-## Product Screens
+## 7. Product Screens
 
 ### Dashboard
 
@@ -410,7 +476,7 @@ Typical outputs include:
 
 ![Asset Detail](./docs/images/asset-detail-financials.png)
 
-## Supported Markets
+## 8. Supported Markets
 
 | Market | Coverage | Primary Use |
 |---|---|---|
@@ -421,31 +487,33 @@ Typical outputs include:
 | Funds | Mutual and pension funds | Stability and horizon performance |
 | FX | Core FX universe | Cross-market context |
 
-## Architecture
+## 9. Methodology Summary
 
-The platform runs on two main layers:
+The general flow is:
 
-1. `Next.js` frontend
-2. `FastAPI` Python engine
+`data -> features -> score -> probability -> action -> outcome validation`
 
-Requests flow through the internal `/api/python/...` proxy layer before reaching the engine.
+The model family is conceptually close to:
 
-## Data Sources
+- feature engineering
+- cross-market relative strength
+- regime awareness
+- risk-adjusted ranking
+- walk-forward validation
+- calibration-aware decision support
 
-| Source | Used For | Markets | Notes |
-|---|---|---|---|
-| `borsapy` | BIST universe, screening, structured market data | BIST | One of the core building blocks on the BIST side |
-| `yfinance` | History, analyst targets, benchmarks, enrichment | US, crypto, commodities | Protected with cache and snapshots |
-| Local snapshots | Outcome reports and fast re-use | All supported markets | Generated by the engine |
-| Local JSON / SQLite | Profiles, favorites, portfolio state | App-wide | Local-first persistence |
+### Probability layer
 
-Special thanks to the maintainers and contributors of the `borsapy` ecosystem.
+The system can produce:
 
-## Formula System
+- `probability_positive`
+- `probability_outperform`
+- `expected_return_pct`
+- `expected_excess_return_pct`
+- `risk_forecast_pct`
+- `calibration_confidence`
 
-Core pattern:
-
-`data -> score -> probability -> action`
+## 10. Proprietary Formula Families
 
 Main BIST score families:
 
@@ -458,16 +526,60 @@ Main BIST score families:
 - `Long-Term Score`
 - `Radar Score`
 
-The probability layer produces:
+Simplified decision structure:
 
-- `probability_positive`
-- `probability_outperform`
-- `expected_return_pct`
-- `expected_excess_return_pct`
-- `risk_forecast_pct`
-- `calibration_confidence`
+`Total Signal = Trend + Alpha + Quality + Liquidity - penalty layers`
 
-## Setup
+Penalty layers may include:
+
+- overextension
+- low confidence
+- missing data
+- weak regime
+
+Reference technical notes:
+
+- [`docs/hakiki-alfa-v1.md`](./docs/hakiki-alfa-v1.md)
+- [`docs/trend-skoru-v1.md`](./docs/trend-skoru-v1.md)
+- [`docs/firsat-skoru-v1.md`](./docs/firsat-skoru-v1.md)
+- [`docs/proprietary-score-family-v1.md`](./docs/proprietary-score-family-v1.md)
+- [`docs/tahmin-motoru-v1.md`](./docs/tahmin-motoru-v1.md)
+
+## 11. Data Sources
+
+| Source | Used For | Markets | Notes |
+|---|---|---|---|
+| `borsapy` | BIST universe, screening, structured market data | BIST | One of the core building blocks on the BIST side |
+| `yfinance` | History, analyst targets, benchmarks, enrichment | US, crypto, commodities | Protected with cache and snapshots |
+| Local snapshots | Outcome reports and fast re-use | All supported markets | Generated by the engine |
+| Local JSON / SQLite | Profiles, favorites, portfolio state | App-wide | Local-first persistence |
+
+Special thanks to the maintainers and contributors of the `borsapy` ecosystem.
+
+## 12. Architecture
+
+The platform runs on two main layers:
+
+1. `Next.js` frontend
+2. `FastAPI` Python engine
+
+Requests flow through the internal `/api/python/...` proxy layer before reaching the engine.
+
+## 13. Reading Guide for Reviewers and AI Systems
+
+Recommended reading order:
+
+1. This README
+2. [`docs/sistem-raporu-tr.md`](./docs/sistem-raporu-tr.md)
+3. [`docs/proprietary-score-family-v1.md`](./docs/proprietary-score-family-v1.md)
+4. [`docs/hakiki-alfa-v1.md`](./docs/hakiki-alfa-v1.md)
+5. [`engine-python/scoring`](./engine-python/scoring)
+6. [`engine-python/api`](./engine-python/api)
+7. [`app/(dashboard)`](./app/(dashboard))
+
+This sequence helps both humans and AI systems understand the product logic first, then the technical implementation.
+
+## 14. Setup
 
 ```powershell
 git clone https://github.com/emirhangungormez/mizan23.git
@@ -483,7 +595,7 @@ The launcher attempts to:
 - start frontend and backend
 - run health checks
 
-## LAN Usage
+## 15. LAN Usage
 
 `mizan23` can be used across multiple devices on the same local network.
 
@@ -492,7 +604,7 @@ Example:
 - local machine: `http://localhost:3000`
 - same network devices: `http://<local-ip>:3000`
 
-## Security Note
+## 16. Security Note
 
 The current security model is suitable for:
 
@@ -500,14 +612,18 @@ The current security model is suitable for:
 - trusted local networks
 - local or small-group usage
 
-## Troubleshooting
+## 17. Issues, Suggestions, and Contributions
 
-### `Waiting for health checks`
+You can use GitHub Issues to:
 
-This usually means:
+- report bugs
+- suggest improvements
+- propose formula changes
+- discuss methodology
+- recommend new data sources
 
-- backend is starting slowly
-- frontend is up but backend is not ready
-- or the engine crashed during startup
+Please include:
 
-The launcher now shows which service is being waited for and prints the latest log lines when needed.
+- what happened
+- which module or screen was affected
+- logs or screenshots if available
