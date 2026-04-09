@@ -1,0 +1,47 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="720" rx="30" fill="#0A1016"/>
+  <text x="56" y="78" fill="white" font-family="Segoe UI, Arial, sans-serif" font-size="40" font-weight="800">mizan23 architecture</text>
+  <text x="56" y="116" fill="#92A5B5" font-family="Segoe UI, Arial, sans-serif" font-size="22">Client UI, internal proxy, Python engine, cache and snapshot layers</text>
+
+  <rect x="60" y="180" width="250" height="140" rx="24" fill="#101922" stroke="#253647"/>
+  <text x="90" y="232" fill="#F4F7FA" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Frontend UI</text>
+  <text x="90" y="272" fill="#A3B3C0" font-family="Segoe UI, Arial, sans-serif" font-size="21">Next.js pages</text>
+  <text x="90" y="302" fill="#A3B3C0" font-family="Segoe UI, Arial, sans-serif" font-size="21">Tables, charts, portfolio</text>
+
+  <rect x="360" y="180" width="250" height="140" rx="24" fill="#101922" stroke="#253647"/>
+  <text x="390" y="232" fill="#F4F7FA" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Internal Proxy</text>
+  <text x="390" y="272" fill="#A3B3C0" font-family="Segoe UI, Arial, sans-serif" font-size="21">/api/python/...</text>
+  <text x="390" y="302" fill="#A3B3C0" font-family="Segoe UI, Arial, sans-serif" font-size="21">Retry, routing, admin key</text>
+
+  <rect x="660" y="180" width="250" height="140" rx="24" fill="#101922" stroke="#253647"/>
+  <text x="690" y="232" fill="#F4F7FA" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Python Engine</text>
+  <text x="690" y="272" fill="#A3B3C0" font-family="Segoe UI, Arial, sans-serif" font-size="21">FastAPI + scoring</text>
+  <text x="690" y="302" fill="#A3B3C0" font-family="Segoe UI, Arial, sans-serif" font-size="21">Signals, outcomes, portfolio</text>
+
+  <rect x="940" y="180" width="200" height="140" rx="24" fill="#101922" stroke="#253647"/>
+  <text x="970" y="232" fill="#F4F7FA" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Sources</text>
+  <text x="970" y="272" fill="#A3B3C0" font-family="Segoe UI, Arial, sans-serif" font-size="21">borsapy</text>
+  <text x="970" y="302" fill="#A3B3C0" font-family="Segoe UI, Arial, sans-serif" font-size="21">yfinance</text>
+
+  <rect x="240" y="430" width="250" height="150" rx="24" fill="#10261E" stroke="#235B47"/>
+  <text x="270" y="482" fill="#ECFFF8" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Cache Layer</text>
+  <text x="270" y="522" fill="#B8D8CA" font-family="Segoe UI, Arial, sans-serif" font-size="21">Memory cache</text>
+  <text x="270" y="552" fill="#B8D8CA" font-family="Segoe UI, Arial, sans-serif" font-size="21">Fast reads / stale fallback</text>
+
+  <rect x="540" y="430" width="250" height="150" rx="24" fill="#142235" stroke="#315377"/>
+  <text x="570" y="482" fill="#F1F7FD" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Snapshots</text>
+  <text x="570" y="522" fill="#BDD0E5" font-family="Segoe UI, Arial, sans-serif" font-size="21">Daily archives</text>
+  <text x="570" y="552" fill="#BDD0E5" font-family="Segoe UI, Arial, sans-serif" font-size="21">Outcome validation</text>
+
+  <rect x="840" y="430" width="250" height="150" rx="24" fill="#2A1E11" stroke="#6C4A22"/>
+  <text x="870" y="482" fill="#FFF4E8" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">Profiles &amp; Data</text>
+  <text x="870" y="522" fill="#E8D0B9" font-family="Segoe UI, Arial, sans-serif" font-size="21">Favorites</text>
+  <text x="870" y="552" fill="#E8D0B9" font-family="Segoe UI, Arial, sans-serif" font-size="21">Portfolios / JSON / SQLite</text>
+
+  <path d="M310 250H360" stroke="#6E88A1" stroke-width="4" stroke-linecap="round"/>
+  <path d="M610 250H660" stroke="#6E88A1" stroke-width="4" stroke-linecap="round"/>
+  <path d="M910 250H940" stroke="#6E88A1" stroke-width="4" stroke-linecap="round"/>
+  <path d="M785 320V390" stroke="#6E88A1" stroke-width="4" stroke-linecap="round"/>
+  <path d="M490 505H540" stroke="#6E88A1" stroke-width="4" stroke-linecap="round"/>
+  <path d="M790 505H840" stroke="#6E88A1" stroke-width="4" stroke-linecap="round"/>
+</svg>
