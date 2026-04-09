@@ -708,15 +708,17 @@ try {
     Write-Warn "Temel dogrulama calisti ama tam temiz donmedi: $($_.Exception.Message)"
 }
 
-if (-not $SkipBrowser) {
-    Start-Process "http://localhost:3000" | Out-Null
-}
-
 $lanIp = Get-PrimaryLanIp
+$browserUrl = if ($lanIp) { "http://${lanIp}:3000" } else { "http://localhost:3000" }
+
+if (-not $SkipBrowser) {
+    Start-Process $browserUrl | Out-Null
+}
 
 Write-Host ""
 Write-Ok "Sistem hazir."
-Write-Info "Arayuz: http://localhost:3000"
+Write-Info "Arayuz: $browserUrl"
+Write-Info "Yerel erisim: http://localhost:3000"
 Write-Info "Engine: http://127.0.0.1:3003"
 if ($lanIp) {
     Write-Info "Ayni agdaki cihazlar icin arayuz: http://${lanIp}:3000"
