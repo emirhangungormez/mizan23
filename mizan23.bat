@@ -1,6 +1,8 @@
 @echo off
 setlocal
 cd /d "%~dp0"
+chcp 65001 >nul
+set PYTHONUTF8=1
 title mizan23 Bootstrap
 color 0B
 mode con: cols=108 lines=34 >nul 2>nul
