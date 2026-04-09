@@ -1,8 +1,130 @@
 # mizan23
 
-Professional local-first market intelligence, recommendation, and portfolio decision-support platform.
+Local-first market intelligence platform for stock analysis, quant-style scoring, recommendation workflows, and portfolio decision support.
 
-Yerel çalışan, çoklu piyasa destekli, öneri ve portföy karar destek platformu.
+Yerel çalışan; hisse analizi, quant tarzı skor üretimi, tavsiye iş akışları ve portföy karar desteği için tasarlanmış piyasa zekâsı platformu.
+
+## What This Project Is
+
+`mizan23`, raw market data into score, probability, action, and historical validation.
+
+In plain terms, it answers questions like:
+
+- Which assets look strong right now?
+- Which horizon fits this idea better: 1 day, 5 days, 30 days, 6 months, or 1 year?
+- Is the move only noisy momentum, or does it have structural strength?
+- Did the system make correct calls in the past?
+- Is a current portfolio position still aligned with the model?
+
+Kısa anlatımla `mizan23`, ham piyasa verisini sadece ekrana basmaz; onu skora, olasılığa, aksiyona ve tarihsel doğrulamaya dönüştürür.
+
+---
+
+## Why It Exists
+
+Most market tools do one of these well but not together:
+
+- price monitoring
+- watchlists
+- charting
+- stock screening
+- portfolio tracking
+- backtest-style validation
+
+`mizan23` exists to combine them into one deterministic workspace.
+
+The goal is not to produce magical AI predictions. The goal is to build a transparent, inspectable, and repeatable market decision system.
+
+Bu proje şu problemi çözmek için var:
+
+Piyasayı takip eden kullanıcı, farklı araçlar arasında bölünmek zorunda kalmasın. Aynı sistem içinde:
+
+- piyasa taraması
+- öneri üretimi
+- varlık detayı
+- portföy takibi
+- favori listeleri
+- sonuç doğrulaması
+
+birlikte çalışabilsin.
+
+---
+
+## Why It Is Different
+
+`mizan23` differs from a basic screener or dashboard in five key ways:
+
+1. It is horizon-aware.
+   It does not only say “strong” or “weak”. It tries to say which time horizon the signal belongs to.
+
+2. It is deterministic.
+   The system is built around explicit formulas, score families, confidence penalties, and validation logic rather than opaque black-box outputs.
+
+3. It tracks outcomes.
+   It does not stop at generating a recommendation. It also checks later whether that recommendation was statistically valid.
+
+4. It uses market-specific logic.
+   BIST, US equities, crypto, commodities, and funds are not forced into one naïve formula.
+
+5. It is local-first.
+   The platform is designed to run on your machine or local network, keeping the workflow close to the user.
+
+---
+
+## Who It Is For
+
+This project is primarily for:
+
+- active investors who want a structured decision workspace
+- traders who care about multi-horizon signal quality
+- developers building market data products
+- quant-curious users who prefer explicit formulas over black-box AI
+- small local teams or families using one shared local system
+
+This project is not primarily for:
+
+- high-frequency execution
+- broker automation
+- institutional OMS/EMS workflows
+- fully managed cloud SaaS usage
+
+---
+
+## What The Output Looks Like
+
+The system produces outputs such as:
+
+- `BIST / 5 Gün / Skor 82 / Olasılık 0.86 / Aksiyon: Güçlü`
+- `ABD / UNH / Adil Değer 360 / Fiyat Farkı +9% / İzle`
+- `Kripto / SOL / BTC’ye göre alfa +1.2 / Referans bant üzerinde`
+- `Portföy / THYAO / Hedef %17 / Hedefe kadar tut`
+- `Sonuç raporu / 1 Gün modeli / yön isabeti %61 / alfa isabeti %57`
+
+Kısacası sistem yalnızca veri göstermez; yorumlanabilir çıktı üretir:
+
+- skor
+- olasılık
+- beklenen getiri
+- beklenen alfa
+- risk tahmini
+- aksiyon
+- tarihsel doğrulama
+
+---
+
+## What This Project Is Not
+
+- It is **not** financial advice.
+- It does **not** promise certainty.
+- It is **not** an AI oracle.
+- It is **not** a broker or trade execution platform.
+
+Türkçe karşılığıyla:
+
+- Bu sistem yatırım tavsiyesi değildir.
+- Kesin tahmin sunduğunu iddia etmez.
+- Kara kutu “AI her şeyi bilir” yaklaşımıyla çalışmaz.
+- Doğrudan emir iletim platformu değildir.
 
 ![mizan23 dashboard](./docs/images/dashboard-home.png)
 
