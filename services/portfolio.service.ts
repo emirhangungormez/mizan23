@@ -1,5 +1,6 @@
 import { fetchFromEngine } from "@/lib/api-client";
 import type { PortfolioTargetMode, PortfolioTargetProfile } from "@/lib/portfolio-targets";
+import { useUserStore } from "@/store/user-store";
 
 /**
  * Portfolio Service - Local JSON Database
