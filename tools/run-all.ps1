@@ -25,31 +25,84 @@ $nodeStamp = Join-Path $setupDir "node-deps.sha256"
 $pythonStamp = Join-Path $setupDir "python-deps.sha256"
 $adminKeyFile = Join-Path $setupDir "mizan23-admin-key.txt"
 $originRepoUrl = "https://github.com/emirhangungormez/mizan23.git"
+$bootstrapVersion = "2026.04"
 
 New-Item -ItemType Directory -Force -Path $runDir, $setupDir | Out-Null
 
 function Write-Header {
     Write-Host ""
-    Write-Host "=============================================================" -ForegroundColor Cyan
-    Write-Host " mizan23 - Bootstrap" -ForegroundColor Cyan
-    Write-Host "=============================================================" -ForegroundColor Cyan
+    Write-Host "#############################################################" -ForegroundColor DarkCyan
+    Write-Host "#                                                           #" -ForegroundColor DarkCyan
+    Write-Host "#   mizan23                                                 #" -ForegroundColor Cyan
+    Write-Host "#   Local Market Intelligence Bootstrap                     #" -ForegroundColor Cyan
+    Write-Host "#                                                           #" -ForegroundColor DarkCyan
+    Write-Host "#############################################################" -ForegroundColor DarkCyan
+    Write-Host ("[INFO] Surum: {0}" -f $bootstrapVersion) -ForegroundColor Gray
+    Write-Host ("[INFO] Klasor: {0}" -f $repoRoot) -ForegroundColor Gray
     Write-Host ""
 }
 
 function Write-Step([string]$message) {
-    Write-Host "[STEP] $message" -ForegroundColor Cyan
+    Write-Host ("[STEP] {0}" -f $message) -ForegroundColor Cyan
 }
 
 function Write-Ok([string]$message) {
-    Write-Host "[OK] $message" -ForegroundColor Green
+    Write-Host ("[ OK ] {0}" -f $message) -ForegroundColor Green
 }
 
 function Write-Warn([string]$message) {
-    Write-Host "[WARN] $message" -ForegroundColor Yellow
+    Write-Host ("[WARN] {0}" -f $message) -ForegroundColor Yellow
 }
 
 function Write-Info([string]$message) {
-    Write-Host "[INFO] $message" -ForegroundColor Gray
+    Write-Host ("[INFO] {0}" -f $message) -ForegroundColor Gray
+}
+
+function Write-Fail([string]$message) {
+    Write-Host ("[FAIL] {0}" -f $message) -ForegroundColor Red
+}
+
+function Get-LogTail([string]$path, [int]$lineCount = 25) {
+    if (-not (Test-Path $path)) {
+        return $null
+    }
+
+    try {
+        $tail = Get-Content -LiteralPath $path -Tail $lineCount -ErrorAction Stop
+        if ($tail) {
+            return ($tail -join [Environment]::NewLine).Trim()
+        }
+    } catch {
+    }
+
+    return $null
+}
+
+function Show-RecoveryHints([string]$message) {
+    Write-Host ""
+    Write-Host "Oneri / Sonraki adimlar:" -ForegroundColor Yellow
+
+    if ($message -match "git komutu bulunamadi") {
+        Write-Host "  1. Git for Windows kurun." -ForegroundColor Yellow
+        Write-Host "  2. Sonra mizan23.bat dosyasini tekrar calistirin." -ForegroundColor Yellow
+        return
+    }
+
+    if ($message -match "Python") {
+        Write-Host "  1. Python kurulumunun tamamlandigindan emin olun." -ForegroundColor Yellow
+        Write-Host "  2. Gerekirse mizan23.bat dosyasini Yonetici olarak tekrar calistirin." -ForegroundColor Yellow
+        Write-Host "  3. Hala olmuyorsa bilgisayari bir kez yeniden baslatip tekrar deneyin." -ForegroundColor Yellow
+        return
+    }
+
+    if ($message -match "npm|Node") {
+        Write-Host "  1. Node.js LTS kurulumunu kontrol edin." -ForegroundColor Yellow
+        Write-Host "  2. Gerekirse mizan23.bat dosyasini Yonetici olarak tekrar calistirin." -ForegroundColor Yellow
+        return
+    }
+
+    Write-Host "  1. mizan23.bat dosyasini Yonetici olarak tekrar calistirin." -ForegroundColor Yellow
+    Write-Host "  2. README kurulum notlarini kontrol edin." -ForegroundColor Yellow
 }
 
 function Test-IsAdministrator {
@@ -163,7 +216,24 @@ function Ensure-GitCommand {
         return $git.Source
     }
 
-    throw "git komutu bulunamadi. Bu klasoru repo haline getirmek icin Git gerekli. Lutfen Git kurup tekrar deneyin."
+    if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
+        throw "git komutu bulunamadi. winget de yok. Lutfen Git for Windows kurup tekrar deneyin."
+    }
+
+    Write-Warn "git bulunamadi. winget ile Git kurulumu deneniyor..."
+    winget install Git.Git --silent --accept-package-agreements --accept-source-agreements | Out-Null
+
+    $deadline = (Get-Date).AddSeconds(20)
+    while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds 2
+        $git = Get-Command "git" -ErrorAction SilentlyContinue
+        if ($git) {
+            Write-Ok "Git bulundu ve kullanima hazirlandi."
+            return $git.Source
+        }
+    }
+
+    throw "Git kurulumu baslatildi ancak henuz kullanilabilir gorunmuyor. Kurulum tamamlaninca mizan23.bat dosyasini tekrar calistirin."
 }
 
 function Bootstrap-RepositoryMetadata {
@@ -378,9 +448,35 @@ function Stop-PortProcess([int]$port) {
     }
 }
 
-function Wait-HttpReady([string]$url, [string]$label, [int]$timeoutSeconds) {
+function Wait-HttpReady(
+    [string]$url,
+    [string]$label,
+    [int]$timeoutSeconds,
+    $Process = $null,
+    [string]$StdErrPath = "",
+    [string]$StdOutPath = ""
+) {
     $deadline = (Get-Date).AddSeconds($timeoutSeconds)
     while ((Get-Date) -lt $deadline) {
+        if ($Process) {
+            try {
+                if ($Process.HasExited) {
+                    $errorTail = Get-LogTail -path $StdErrPath
+                    $outputTail = Get-LogTail -path $StdOutPath
+                    $detail = $errorTail
+                    if (-not $detail) {
+                        $detail = $outputTail
+                    }
+                    if ($detail) {
+                        throw "$label baslatilamadi. Son log:`n$detail"
+                    }
+                    throw "$label baslatilamadi. Ilgili surec erken kapandi."
+                }
+            } catch {
+                throw
+            }
+        }
+
         try {
             $response = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 10
             if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
@@ -428,6 +524,18 @@ function Start-BackgroundProcess {
         -RedirectStandardOutput $StdOutPath `
         -RedirectStandardError $StdErrPath `
         -PassThru
+}
+
+trap [System.Exception] {
+    $message = $_.Exception.Message
+    Write-Host ""
+    Write-Host "=============================================================" -ForegroundColor Red
+    Write-Fail "mizan23 baslatma akisi durdu."
+    Write-Fail $message
+    Write-Host "=============================================================" -ForegroundColor Red
+    Show-RecoveryHints $message
+    Write-Host ""
+    exit 1
 }
 
 Write-Header
@@ -537,8 +645,8 @@ Write-Info "Engine PID: $($engineProcess.Id)"
 Write-Info "Frontend PID: $($frontendProcess.Id)"
 
 Write-Step "Saglik kontrolleri bekleniyor"
-Wait-HttpReady -url "http://127.0.0.1:3003/api/health" -label "Python engine" -timeoutSeconds 120
-Wait-HttpReady -url "http://localhost:3000" -label "Next.js arayuzu" -timeoutSeconds 180
+Wait-HttpReady -url "http://127.0.0.1:3003/api/health" -label "Python engine" -timeoutSeconds 120 -Process $engineProcess -StdErrPath $engineErr -StdOutPath $engineOut
+Wait-HttpReady -url "http://localhost:3000" -label "Next.js arayuzu" -timeoutSeconds 180 -Process $frontendProcess -StdErrPath $frontendErr -StdOutPath $frontendOut
 
 Write-Step "Temel sistem dogrulamasi"
 try {

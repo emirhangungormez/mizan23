@@ -76,7 +76,14 @@ async function handleProxy(request: NextRequest, { params }: RouteParams) {
     return new NextResponse(text, { status: res.status, headers: { "content-type": ct } });
   } catch (err) {
     console.error("[Proxy Error]", err);
-    return NextResponse.json({ error: "Proxy Connection Failed", details: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Python engine baglantisi kurulamadi",
+        details:
+          "Backend henuz hazir degil, baslatilamadi veya yerel makinede erisilemiyor. mizan23 baslatici ekranindaki engine logunu kontrol edin.",
+      },
+      { status: 503 },
+    );
   }
 }
 
