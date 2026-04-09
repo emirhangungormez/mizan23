@@ -1,7 +1,8 @@
 param(
     [switch]$SkipBrowser,
     [switch]$NoInstall,
-    [switch]$SkipFirewall
+    [switch]$SkipFirewall,
+    [switch]$SkipGitPull
 )
 
 $ErrorActionPreference = "Stop"
@@ -109,6 +110,69 @@ function Require-Command([string]$name, [string]$wingetId) {
     Write-Warn "$name bulunamadi. winget ile kurulum deneniyor..."
     winget install $wingetId --silent --accept-package-agreements --accept-source-agreements | Out-Null
     throw "$name kurulumu baslatildi. Kurulum tamamlaninca RUN_ALL.bat dosyasini tekrar calistirin."
+}
+
+function Update-RepositoryFromOrigin {
+    if ($SkipGitPull) {
+        Write-Warn "Git guncellemesi atlandi."
+        return
+    }
+
+    if (-not (Test-Path (Join-Path $repoRoot ".git"))) {
+        Write-Warn "Git deposu bulunamadi. Guncel kod cekme adimi atlandi."
+        return
+    }
+
+    if (-not (Get-Command "git" -ErrorAction SilentlyContinue)) {
+        Write-Warn "git bulunamadi. Guncel kod cekme adimi atlandi."
+        return
+    }
+
+    Write-Step "Repo guncelligi kontrol ediliyor"
+
+    try {
+        & git -C $repoRoot fetch --prune origin
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warn "origin fetch basarisiz oldu. Mevcut kod ile devam ediliyor."
+            return
+        }
+
+        $dirtyState = (& git -C $repoRoot status --porcelain | Out-String).Trim()
+        if ($dirtyState) {
+            Write-Warn "Yerel degisiklik var. Repo otomatik cekilmedi."
+            Write-Warn "Degisiklikleri commit edin ya da stash alin; sonra RUN_ALL.bat tekrar cekebilir."
+            return
+        }
+
+        $branch = (& git -C $repoRoot branch --show-current | Out-String).Trim()
+        if (-not $branch) {
+            Write-Warn "Aktif branch bulunamadi. Repo otomatik cekilmedi."
+            return
+        }
+
+        $upstream = (& git -C $repoRoot rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>$null | Out-String).Trim()
+        if (-not $upstream) {
+            Write-Warn "Upstream branch tanimli degil. Repo otomatik cekilmedi."
+            return
+        }
+
+        $localCommit = (& git -C $repoRoot rev-parse HEAD | Out-String).Trim()
+        $remoteCommit = (& git -C $repoRoot rev-parse $upstream | Out-String).Trim()
+
+        if ($localCommit -eq $remoteCommit) {
+            Write-Ok "Repo zaten guncel."
+            return
+        }
+
+        & git -C $repoRoot pull --ff-only
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "Repo origin uzerinden guncellendi."
+        } else {
+            Write-Warn "Repo otomatik cekilemedi. Mevcut kod ile devam ediliyor."
+        }
+    } catch {
+        Write-Warn "Repo guncellemesi sirasinda hata olustu: $($_.Exception.Message)"
+    }
 }
 
 function Ensure-PythonRuntime {
@@ -246,6 +310,8 @@ Require-Command -name "npm" -wingetId "OpenJS.NodeJS.LTS" | Out-Null
 Ensure-PythonRuntime
 $pythonBootstrap = Resolve-PythonBootstrapCommand
 Write-Ok "Node.js ve Python hazir."
+
+Update-RepositoryFromOrigin
 
 if (-not $SkipFirewall) {
     Write-Step "Yerel ag erisimi icin guvenlik duvari kontrol ediliyor"

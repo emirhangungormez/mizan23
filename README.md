@@ -18,6 +18,7 @@ Use:
 
 What it does:
 
+- checks `origin/main` and pulls the latest fast-forward changes when the worktree is clean
 - checks Node.js and Python
 - creates `engine-python\.venv` if missing
 - installs frontend and Python dependencies when lockfiles change
