@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const PYTHON_API_URL = process.env.PYTHON_ENGINE_URL || "http://127.0.0.1:3003/api";
+const ADMIN_KEY = process.env.MIZAN23_ADMIN_KEY;
 const RETRYABLE_GET_ATTEMPTS = 3;
 const RETRYABLE_HYDRATE_POST_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 400;
@@ -23,7 +24,10 @@ async function handleProxy(request: NextRequest, { params }: RouteParams) {
   try {
     const opts: RequestInit = {
       method: request.method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(ADMIN_KEY ? { "x-mizan23-admin-key": ADMIN_KEY } : {}),
+      },
     };
 
     if (!["GET", "HEAD"].includes(request.method)) {

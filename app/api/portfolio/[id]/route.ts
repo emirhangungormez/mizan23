@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
 import path from 'path';
+
+import { ensureJsonFile, writeJsonFile } from '@/lib/server/json-storage';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'portfolios.json');
 
 function readData() {
-    if (!fs.existsSync(DATA_FILE)) return [];
-    try {
-        return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-    } catch { return []; }
+    return ensureJsonFile<any[]>(DATA_FILE, []);
 }
 
 function saveData(data: any) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    writeJsonFile(DATA_FILE, data);
 }
 
 export async function GET(

@@ -257,10 +257,10 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
 
   return (
     <>
-      <div className="w-full p-3 pb-8">
+      <div className="w-full p-3 pb-8 sm:p-4">
         <div className="flex flex-col gap-4">
           {/* Sayfa Başlığı ve Kontroller (Card Dışında) */}
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between px-1">
+          <div className="flex flex-col gap-4 px-1 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-1">
               <Link href="/portfolio" className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
                 <ChevronLeft className="size-4" />
@@ -269,9 +269,9 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
               <h1 className="text-2xl font-medium tracking-tight text-foreground">{portfolio.name}</h1>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
               {/* Para Birimi Seçici */}
-              <div className="flex items-center rounded-lg border bg-muted/30 p-1">
+              <div className="flex items-center self-start rounded-lg border bg-muted/30 p-1 sm:self-auto">
                 <button
                   onClick={() => displayCurrency !== 'TRY' && toggleCurrency()}
                   className={cn(
@@ -293,7 +293,7 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
               </div>
 
               {/* Zaman Dilimleri */}
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1">
                 {PERIOD_OPTIONS.map((option) => {
                   const isActive = selectedTimeframe === option.value;
                   return (
@@ -317,7 +317,7 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => openTransactionModal("buy")}>
+                <Button variant="outline" onClick={() => openTransactionModal("buy")} className="w-full sm:w-auto">
                   <Plus className="size-4" />
                   İşlem Yap
                 </Button>
@@ -536,7 +536,7 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
           ) : null}
 
           <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.72fr)]">
-            <section className="rounded-xl border bg-card flex flex-col max-h-[500px]">
+            <section className="flex flex-col rounded-xl border bg-card xl:max-h-[500px]">
               <div className="flex items-center justify-between gap-3 border-b px-4 py-4 shrink-0">
                 <div>
                   <div className="text-lg font-medium tracking-tight">Sepetteki varlıklar</div>
@@ -555,7 +555,7 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
                 </div>
               ) : (
                 <div className="overflow-auto no-scrollbar scroll-smooth flex-1">
-                  <table className="min-w-full text-sm border-separate border-spacing-0">
+                  <table className="min-w-[1040px] text-sm border-separate border-spacing-0">
                     <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm text-left text-[10px] uppercase tracking-wide text-muted-foreground">
                       <tr>
                         <th className="px-4 py-3 font-medium border-b">Varlık</th>
@@ -721,8 +721,8 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
               )}
             </section>
 
-            <section className="rounded-xl border bg-card flex flex-col max-h-[500px]">
-              <div className="flex items-center justify-between gap-3 border-b px-4 py-4 shrink-0">
+            <section className="flex flex-col rounded-xl border bg-card xl:max-h-[500px]">
+              <div className="shrink-0 border-b px-4 py-4">
                 <div>
                   <div className="text-lg font-medium tracking-tight">İşlem geçmişi</div>
                   <div className="mt-1 text-sm text-muted-foreground">Sepet işlem geçmişi</div>

@@ -30,9 +30,10 @@ Sistem; BIST, ABD hisseleri, kripto, emtia, fon, döviz, portföy yönetimi, fav
 16. [Commands / Komutlar](#commands--komutlar)
 17. [Health and Verification / Sağlık ve Doğrulama](#health-and-verification--sağlık-ve-doğrulama)
 18. [Git Update Flow / Git Güncelleme Akışı](#git-update-flow--git-güncelleme-akışı)
-19. [Troubleshooting / Sorun Giderme](#troubleshooting--sorun-giderme)
-20. [Acknowledgements / Teşekkür](#acknowledgements--teşekkür)
-21. [Disclaimer / Sorumluluk Reddi](#disclaimer--sorumluluk-reddi)
+19. [Security Model / Güvenlik Modeli](#security-model--güvenlik-modeli)
+20. [Troubleshooting / Sorun Giderme](#troubleshooting--sorun-giderme)
+21. [Acknowledgements / Teşekkür](#acknowledgements--teşekkür)
+22. [Disclaimer / Sorumluluk Reddi](#disclaimer--sorumluluk-reddi)
 
 ---
 
@@ -581,6 +582,12 @@ What it does:
 - runs quick verification
 - opens the browser
 
+Important startup notes:
+
+- if Python is installed but not added to `PATH`, the launcher now also checks common Windows Python install folders
+- if the project was opened from a ZIP package or copied without `.git`, automatic repository update is skipped safely
+- if Python is missing completely, the launcher tries `winget` first and then asks you to rerun after installation finishes
+
 ### TR
 
 Bu dosya hem günlük kullanım hem de yeni makinede ilk açılış için önerilen giriş noktasıdır.
@@ -597,6 +604,12 @@ Yaptıkları:
 - sağlık kontrolü bekler
 - hızlı doğrulama çalıştırır
 - tarayıcıyı açar
+
+Önemli başlatma notları:
+
+- Python kurulu ama `PATH` içine ekli değilse başlatıcı artık Windows üzerindeki yaygın Python klasörlerini de kontrol eder
+- proje ZIP olarak açıldıysa ya da `.git` klasörü yoksa otomatik repo güncellemesi güvenli şekilde atlanır
+- Python hiç yoksa başlatıcı önce `winget` ile kurmayı dener, kurulum bittiğinde tekrar çalıştırmanızı ister
 
 Main script:
 
@@ -694,6 +707,69 @@ git push origin main
 `mizan23.bat` can also pull the latest changes automatically when the worktree is clean.
 
 `mizan23.bat`, çalışma ağacı temiz olduğunda son değişiklikleri otomatik çekebilir.
+
+If the project was downloaded as a ZIP file instead of `git clone`, this update step is skipped automatically because no `.git` metadata exists.
+
+Proje `git clone` yerine ZIP olarak indirildiyse bu güncelleme adımı otomatik olarak atlanır; çünkü `.git` metadata'sı bulunmaz.
+
+---
+
+## Security Model / Güvenlik Modeli
+
+### EN
+
+`mizan23` is primarily designed for trusted local or trusted LAN environments.
+
+The current first security layer includes:
+
+- protected engine mutation routes via `x-mizan23-admin-key`
+- protected `/api/system/*` routes via the same admin key
+- automatic local admin key generation during startup
+- minimal public `/api/health` response
+- detailed system health moved under protected system scope
+
+What this means in practice:
+
+- direct engine mutation calls from the LAN are no longer openly writable
+- direct cache/system operations require the internal admin key
+- the frontend proxy injects the internal key automatically
+
+Current limitations:
+
+- client-side persisted data such as favorites, profiles, and some portfolio state still live in browser storage
+- this is not a full multi-user authentication system
+- trusted network assumptions still matter
+
+### TR
+
+`mizan23`, öncelikle güvenilir yerel makine veya güvenilir yerel ağ kullanımı için tasarlanmıştır.
+
+Mevcut ilk güvenlik katmanı şunları içerir:
+
+- `x-mizan23-admin-key` ile korunan engine mutasyon endpoint'leri
+- aynı anahtar ile korunan `/api/system/*` yolları
+- başlangıçta otomatik üretilen yerel yönetim anahtarı
+- sadeleştirilmiş public `/api/health` çıktısı
+- ayrıntılı sistem sağlığının korumalı sistem alanına taşınması
+
+Pratik anlamı:
+
+- yerel ağdan engine'e doğrudan yazan istekler artık açık değil
+- cache ve sistem işlemleri yönetim anahtarı gerektiriyor
+- frontend proxy bu anahtarı otomatik taşıyor
+
+Mevcut sınırlar:
+
+- favoriler, profiller ve bazı portföy durumları hâlâ tarayıcı tarafı depolamada tutuluyor
+- bu yapı tam çok kullanıcılı kimlik doğrulama sistemi değildir
+- güvenilir ağ varsayımı hâlâ önemlidir
+
+Reference mindset inspired by the `security-check` review categories:
+
+- access control
+- API security
+- data exposure
+- health/info disclosure
 
 ---
 

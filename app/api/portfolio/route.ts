@@ -1,30 +1,23 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
 import path from 'path';
+
+import { ensureJsonFile, writeJsonFile } from '@/lib/server/json-storage';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'portfolios.json');
 
-// Helper to read data
 function readData() {
-    if (!fs.existsSync(DATA_FILE)) {
-        return [];
-    }
-    const fileContent = fs.readFileSync(DATA_FILE, 'utf-8');
-    try {
-        return JSON.parse(fileContent);
-    } catch (e) {
-        return [];
-    }
+    return ensureJsonFile<any[]>(DATA_FILE, []);
 }
 
-// Helper to save data
 function saveData(data: any) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    writeJsonFile(DATA_FILE, data);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
     const data = readData();
-    return NextResponse.json(data);
+    return NextResponse.json(userId ? data.filter((item) => item.userId === userId) : data);
 }
 
 export async function POST(request: Request) {
@@ -36,6 +29,7 @@ export async function POST(request: Request) {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         assets: [],
+        userId: body?.userId || null,
         ...body
     };
 

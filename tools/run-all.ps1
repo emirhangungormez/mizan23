@@ -23,6 +23,7 @@ $requirementsFile = Join-Path $engineDir "requirements.txt"
 $nodeLockFile = Join-Path $repoRoot "package-lock.json"
 $nodeStamp = Join-Path $setupDir "node-deps.sha256"
 $pythonStamp = Join-Path $setupDir "python-deps.sha256"
+$adminKeyFile = Join-Path $setupDir "mizan23-admin-key.txt"
 
 New-Item -ItemType Directory -Force -Path $runDir, $setupDir | Out-Null
 
@@ -112,6 +113,49 @@ function Require-Command([string]$name, [string]$wingetId) {
     throw "$name kurulumu baslatildi. Kurulum tamamlaninca mizan23.bat dosyasini tekrar calistirin."
 }
 
+function Find-PythonExecutable {
+    $candidates = New-Object System.Collections.Generic.List[string]
+
+    foreach ($commandName in @("py", "python")) {
+        $command = Get-Command $commandName -ErrorAction SilentlyContinue
+        if ($command -and $command.Source) {
+            $candidates.Add($command.Source)
+        }
+    }
+
+    foreach ($base in @($env:LOCALAPPDATA, $env:ProgramFiles, ${env:ProgramFiles(x86)})) {
+        if (-not $base) { continue }
+
+        foreach ($path in @(
+            (Join-Path $base "Programs\Python\Python311\python.exe"),
+            (Join-Path $base "Programs\Python\Python312\python.exe"),
+            (Join-Path $base "Programs\Python\Python313\python.exe"),
+            (Join-Path $base "Python311\python.exe"),
+            (Join-Path $base "Python312\python.exe"),
+            (Join-Path $base "Python313\python.exe")
+        )) {
+            if ($path) {
+                $candidates.Add($path)
+            }
+        }
+    }
+
+    foreach ($candidate in $candidates | Select-Object -Unique) {
+        if (-not $candidate) { continue }
+        if (-not (Test-Path $candidate)) { continue }
+
+        try {
+            $version = & $candidate -c "import sys; print(sys.version)" 2>$null
+            if ($LASTEXITCODE -eq 0 -and $version) {
+                return $candidate
+            }
+        } catch {
+        }
+    }
+
+    return $null
+}
+
 function Update-RepositoryFromOrigin {
     if ($SkipGitPull) {
         Write-Warn "Git guncellemesi atlandi."
@@ -119,7 +163,7 @@ function Update-RepositoryFromOrigin {
     }
 
     if (-not (Test-Path (Join-Path $repoRoot ".git"))) {
-        Write-Warn "Git deposu bulunamadi. Guncel kod cekme adimi atlandi."
+        Write-Info "Bu klasorde .git bulunamadi. Muhtemelen zip ile acildi; otomatik guncelleme atlandi."
         return
     }
 
@@ -176,8 +220,13 @@ function Update-RepositoryFromOrigin {
 }
 
 function Ensure-PythonRuntime {
-    if ((Get-Command "python" -ErrorAction SilentlyContinue) -or (Get-Command "py" -ErrorAction SilentlyContinue)) {
-        return
+    $existingPython = Find-PythonExecutable
+    if ($existingPython) {
+        $pythonDir = Split-Path -Path $existingPython -Parent
+        if ($pythonDir -and ($env:PATH -notlike "*$pythonDir*")) {
+            $env:PATH = "$pythonDir;$env:PATH"
+        }
+        return $existingPython
     }
 
     if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
@@ -186,10 +235,22 @@ function Ensure-PythonRuntime {
 
     Write-Warn "Python bulunamadi. winget ile kurulum deneniyor..."
     winget install Python.Python.3.11 --silent --accept-package-agreements --accept-source-agreements | Out-Null
-    throw "Python kurulumu baslatildi. Kurulum tamamlaninca mizan23.bat dosyasini tekrar calistirin."
+
+    Start-Sleep -Seconds 5
+    $installedPython = Find-PythonExecutable
+    if ($installedPython) {
+        $pythonDir = Split-Path -Path $installedPython -Parent
+        if ($pythonDir -and ($env:PATH -notlike "*$pythonDir*")) {
+            $env:PATH = "$pythonDir;$env:PATH"
+        }
+        Write-Ok "Python bulundu ve kullanima hazirlandi."
+        return $installedPython
+    }
+
+    throw "Python kurulumu baslatildi ancak henuz kullanilabilir gorunmuyor. Kurulum tamamlaninca mizan23.bat dosyasini tekrar calistirin."
 }
 
-function Resolve-PythonBootstrapCommand {
+function Resolve-PythonBootstrapCommand([string]$resolvedPythonPath) {
     if (Get-Command "py" -ErrorAction SilentlyContinue) {
         foreach ($candidate in @("-3.11", "-3", "")) {
             try {
@@ -206,6 +267,13 @@ function Resolve-PythonBootstrapCommand {
                 }
             } catch {
             }
+        }
+    }
+
+    if ($resolvedPythonPath) {
+        return @{
+            FilePath = $resolvedPythonPath
+            Prefix = @()
         }
     }
 
@@ -235,6 +303,21 @@ function Read-Stamp([string]$path) {
 
 function Write-Stamp([string]$path, [string]$value) {
     Set-Content -LiteralPath $path -Value $value -Encoding ASCII
+}
+
+function Get-OrCreateAdminKey {
+    if (Test-Path $adminKeyFile) {
+        $existing = (Get-Content -LiteralPath $adminKeyFile -Raw).Trim()
+        if ($existing) {
+            return $existing
+        }
+    }
+
+    $bytes = New-Object byte[] 32
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    $generated = [Convert]::ToBase64String($bytes).Replace("+", "-").Replace("/", "_").TrimEnd("=")
+    Set-Content -LiteralPath $adminKeyFile -Value $generated -Encoding ASCII
+    return $generated
 }
 
 function Stop-PortProcess([int]$port) {
@@ -307,9 +390,13 @@ Write-Header
 
 Write-Step "Temel araclar kontrol ediliyor"
 Require-Command -name "npm" -wingetId "OpenJS.NodeJS.LTS" | Out-Null
-Ensure-PythonRuntime
-$pythonBootstrap = Resolve-PythonBootstrapCommand
+$resolvedPythonPath = Ensure-PythonRuntime
+$pythonBootstrap = Resolve-PythonBootstrapCommand -resolvedPythonPath $resolvedPythonPath
 Write-Ok "Node.js ve Python hazir."
+
+$adminKey = Get-OrCreateAdminKey
+$env:MIZAN23_ADMIN_KEY = $adminKey
+Write-Ok "Yerel yonetim anahtari hazir."
 
 Update-RepositoryFromOrigin
 

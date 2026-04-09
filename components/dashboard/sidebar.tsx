@@ -102,10 +102,17 @@ const marketNav = [
 ];
 
 export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { portfolios } = usePortfolioStore();
+  const portfolios = usePortfolioStore((state) => state.portfolios);
+  const fetchPortfolios = usePortfolioStore((state) => state.fetchPortfolios);
   const { currentUser, logout } = useUserStore();
   const pathname = usePathname();
   const [marketsOpen, setMarketsOpen] = React.useState(true);
+
+  React.useEffect(() => {
+    if (currentUser?.id) {
+      void fetchPortfolios();
+    }
+  }, [currentUser?.id, fetchPortfolios]);
 
   return (
     <Sidebar className="lg:border-r-0!" collapsible="icon" {...props}>

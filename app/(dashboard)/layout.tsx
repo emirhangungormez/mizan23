@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -11,7 +13,11 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const { currentUser, hasHydrated } = useUserStore();
+    const { currentUser, hasHydrated, initialize } = useUserStore();
+
+    useEffect(() => {
+        void initialize();
+    }, [initialize]);
 
     if (!hasHydrated) {
         return (

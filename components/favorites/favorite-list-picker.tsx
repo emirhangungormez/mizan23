@@ -35,11 +35,16 @@ export function FavoriteListPicker({
 }: FavoriteListPickerProps) {
   const currentUser = useUserStore((state) => state.currentUser);
   const lists = useFavoritesStore((state) => state.lists);
+  const initialize = useFavoritesStore((state) => state.initialize);
   const createList = useFavoritesStore((state) => state.createList);
   const toggleItemInList = useFavoritesStore((state) => state.toggleItemInList);
 
   const [newListName, setNewListName] = React.useState("");
   const [error, setError] = React.useState("");
+
+  React.useEffect(() => {
+    void initialize(currentUser?.id || null);
+  }, [currentUser?.id, initialize]);
 
   const userLists = React.useMemo(
     () => lists.filter((list) => list.userId === currentUser?.id),
@@ -54,28 +59,30 @@ export function FavoriteListPicker({
   const isInAnyList = containingCount > 0;
 
   const toggleInList = React.useCallback(
-    (listId: string) => {
-      const added = toggleItemInList(listId, { symbol, name, market });
+    async (listId: string) => {
+      const added = await toggleItemInList(listId, { symbol, name, market }, currentUser?.id || null);
       toast.success(
-        added ? `${symbol} favori listesine eklendi.` : `${symbol} favori listesinden çıkarıldı.`
+        added ? `${symbol} favori listesine eklendi.` : `${symbol} favori listesinden cikarildi.`
       );
     },
-    [market, name, symbol, toggleItemInList]
+    [currentUser?.id, market, name, symbol, toggleItemInList]
   );
 
   const handleCreateList = React.useCallback(() => {
     if (!currentUser) return;
 
-    const listId = createList(currentUser.id, newListName);
-    if (!listId) {
-      setError("Liste adı girin.");
-      return;
-    }
+    void (async () => {
+      const listId = await createList(currentUser.id, newListName);
+      if (!listId) {
+        setError("Liste adi girin.");
+        return;
+      }
 
-    toggleItemInList(listId, { symbol, name, market });
-    setNewListName("");
-    setError("");
-    toast.success(`${symbol} için yeni favori listesi oluşturuldu.`);
+      await toggleItemInList(listId, { symbol, name, market }, currentUser.id);
+      setNewListName("");
+      setError("");
+      toast.success(`${symbol} icin yeni favori listesi olusturuldu.`);
+    })();
   }, [createList, currentUser, market, name, newListName, symbol, toggleItemInList]);
 
   return (
@@ -90,7 +97,7 @@ export function FavoriteListPicker({
             isInAnyList && "text-amber-500",
             className
           )}
-          title={isInAnyList ? `${containingCount} listede kayıtlı` : "Favori listesine ekle"}
+          title={isInAnyList ? `${containingCount} listede kayitli` : "Favori listesine ekle"}
         >
           <Star className={cn("size-4", isInAnyList && "fill-amber-400 text-amber-500")} />
         </Button>
@@ -105,7 +112,7 @@ export function FavoriteListPicker({
                 <DropdownMenuCheckboxItem
                   key={list.id}
                   checked={checked}
-                  onCheckedChange={() => toggleInList(list.id)}
+                  onCheckedChange={() => void toggleInList(list.id)}
                   className="flex items-center justify-between"
                 >
                   <span className="truncate">{list.name}</span>
@@ -118,12 +125,12 @@ export function FavoriteListPicker({
             <DropdownMenuSeparator />
           </>
         ) : (
-          <div className="px-2 py-2 text-sm text-muted-foreground">Henüz favori listesi yok.</div>
+          <div className="px-2 py-2 text-sm text-muted-foreground">Henuz favori listesi yok.</div>
         )}
 
         <div className="space-y-2 px-2 py-2">
           <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Yeni liste oluştur
+            Yeni liste olustur
           </div>
           <Input
             value={newListName}
@@ -131,7 +138,7 @@ export function FavoriteListPicker({
               setNewListName(event.target.value);
               if (error) setError("");
             }}
-            placeholder="Örn. Yakın takip"
+            placeholder="Orn. Yakin takip"
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
@@ -142,7 +149,7 @@ export function FavoriteListPicker({
           {error ? <div className="text-xs text-rose-600">{error}</div> : null}
           <Button type="button" size="sm" className="w-full" onClick={handleCreateList}>
             {userLists.length > 0 ? <Plus className="size-4" /> : <Check className="size-4" />}
-            Liste oluştur ve ekle
+            Liste olustur ve ekle
           </Button>
         </div>
       </DropdownMenuContent>

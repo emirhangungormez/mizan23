@@ -1183,16 +1183,16 @@ export default function MarketCategoryPage() {
   return (
     <div className="page-shell no-scrollbar overflow-y-auto">
       <div className="flex flex-col gap-4">
-        <div className="page-header-row mb-1">
+        <div className="page-header-row mb-1 gap-3">
           <div className="space-y-1">
             <h1 className="text-2xl font-medium tracking-tight text-foreground">{config.name}</h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             {isBist && (
               <Link
                 href="/analysis"
-                className="inline-flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
                 title="Bugun al, sat, tut kararlarini sistem tavsiyesine ceviren ekran"
               >
                 <Target className="size-4" />
@@ -1202,18 +1202,18 @@ export default function MarketCategoryPage() {
             {isBist && (
               <Link
                 href="/market/outcomes"
-                className="inline-flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
                 title="Skorlarin sonradan ne kadar is yaptigini gosteren outcome raporu"
               >
                 <LineChart className="size-4" />
                 Sonuc Raporu
               </Link>
             )}
-            <div className="relative group">
+            <div className="relative group w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input
                 placeholder="Varlik ara..."
-                className="pl-9 w-64 h-9 bg-muted/30 border-border/40 focus-visible:ring-primary/20 transition-all rounded-lg text-sm"
+                className="h-9 w-full rounded-lg border-border/40 bg-muted/30 pl-9 text-sm transition-all focus-visible:ring-primary/20"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -1222,7 +1222,7 @@ export default function MarketCategoryPage() {
             <button
               onClick={() => (isBist ? fetchBistData(true) : fetchOtherData())}
               disabled={isLoading}
-              className="p-2 rounded-lg border bg-muted/30 hover:bg-muted text-muted-foreground hover:text-primary transition-all active:scale-95 disabled:opacity-50"
+              className="inline-flex h-9 items-center justify-center rounded-lg border bg-muted/30 px-3 text-muted-foreground transition-all hover:bg-muted hover:text-primary active:scale-95 disabled:opacity-50 sm:w-auto sm:px-2"
             >
               <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
             </button>
@@ -1230,7 +1230,7 @@ export default function MarketCategoryPage() {
         </div>
 
         {isBist && summary && (
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <button
               type="button"
               onClick={() => setActiveSummaryFilter("all")}
@@ -1295,7 +1295,7 @@ export default function MarketCategoryPage() {
         )}
 
         {isBist && (
-          <div className="flex flex-wrap items-center gap-1.5 px-1">
+          <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto px-1 pb-1">
             {BIST_WINDOWS.map((window) => (
               <button
                 key={window.id}
@@ -1314,8 +1314,9 @@ export default function MarketCategoryPage() {
           </div>
         )}
 
-        <div className="rounded-xl border border-border/40 bg-card overflow-hidden">
-          <table className="w-full text-sm border-collapse">
+        <div className="overflow-hidden rounded-xl border border-border/40 bg-card">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px] text-sm border-collapse">
             <thead>
               <tr className="bg-muted/20 border-b border-border/30 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
                 <th className="px-3 py-3.5 w-16 text-center">Al</th>
@@ -1815,6 +1816,7 @@ export default function MarketCategoryPage() {
               )}
             </tbody>
           </table>
+          </div>
 
           {isBist && data.length > 0 && (
             <div className="flex items-center justify-center py-6 border-t border-border/20">

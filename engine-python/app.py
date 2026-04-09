@@ -1,6 +1,9 @@
-from fastapi import FastAPI
+import os
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from starlette.responses import JSONResponse
 
 from api.analysis import (
     router as analysis_router,
@@ -25,6 +28,7 @@ from engine.utils import logger
 
 APP_NAME = "mizan23 Engine"
 APP_VERSION = "2.1.0"
+ADMIN_KEY_HEADER = "x-mizan23-admin-key"
 
 app = FastAPI(
     title=APP_NAME,
@@ -53,6 +57,33 @@ app.include_router(bist_data_router, prefix="/api/market", tags=["BIST"])
 app.include_router(user_router, prefix="/api/user", tags=["Kullanici"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["Panel"])
 app.include_router(assets_router, prefix="/api/assets", tags=["Varlik Arama"])
+
+
+def get_admin_key() -> str:
+    return (os.getenv("MIZAN23_ADMIN_KEY") or "").strip()
+
+
+def is_protected_api_path(path: str, method: str) -> bool:
+    normalized_method = method.upper()
+    if path.startswith("/api/system"):
+        return True
+    if path.startswith("/api/") and normalized_method in {"POST", "PUT", "PATCH", "DELETE"}:
+        return True
+    return False
+
+
+@app.middleware("http")
+async def enforce_admin_key(request: Request, call_next):
+    admin_key = get_admin_key()
+    if admin_key and is_protected_api_path(request.url.path, request.method):
+        provided_key = (request.headers.get(ADMIN_KEY_HEADER) or "").strip()
+        if provided_key != admin_key:
+            return JSONResponse(
+                {"error": "Unauthorized", "details": "Admin anahtari gerekli."},
+                status_code=401,
+            )
+
+    return await call_next(request)
 
 
 @app.on_event("startup")
@@ -104,6 +135,15 @@ async def root():
 
 @app.get("/api/health")
 async def health_check():
+    return {
+        "status": "healthy",
+        "service": APP_NAME,
+        "version": APP_VERSION,
+    }
+
+
+@app.get("/api/system/health")
+async def system_health():
     try:
         pool_stats = get_connection_pool().stats
     except Exception:

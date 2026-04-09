@@ -184,6 +184,7 @@ function normalizeFavoriteRow(item: FavoriteListItem, raw?: RawMarketRow): Favor
 export default function FavoritesManagementPage() {
   const currentUserId = useUserStore((state) => state.currentUser?.id);
   const lists = useFavoritesStore((state) => state.lists);
+  const initializeFavorites = useFavoritesStore((state) => state.initialize);
   const createList = useFavoritesStore((state) => state.createList);
   const deleteList = useFavoritesStore((state) => state.deleteList);
   const removeItemFromList = useFavoritesStore((state) => state.removeItemFromList);
@@ -206,6 +207,10 @@ export default function FavoritesManagementPage() {
     () => userLists.find((list) => list.id === selectedListId) ?? null,
     [selectedListId, userLists],
   );
+
+  React.useEffect(() => {
+    void initializeFavorites(currentUserId || null);
+  }, [currentUserId, initializeFavorites]);
 
   React.useEffect(() => {
     if (selectedListId && userLists.every((list) => list.id !== selectedListId)) {
@@ -243,19 +248,21 @@ export default function FavoritesManagementPage() {
       return;
     }
 
-    const createdId = createList(currentUserId, normalizedName);
-    if (!createdId) {
-      const nextError = "Liste olusturulamadi. Ismi kontrol edip tekrar dene.";
-      setCreateError(nextError);
-      toast.error(nextError);
-      return;
-    }
+    void (async () => {
+      const createdId = await createList(currentUserId, normalizedName);
+      if (!createdId) {
+        const nextError = "Liste olusturulamadi. Ismi kontrol edip tekrar dene.";
+        setCreateError(nextError);
+        toast.error(nextError);
+        return;
+      }
 
-    setSelectedListId(createdId);
-    setNewListName("");
-    setCreateError("");
-    setCreateDialogOpen(false);
-    toast.success("Liste olusturuldu.");
+      setSelectedListId(createdId);
+      setNewListName("");
+      setCreateError("");
+      setCreateDialogOpen(false);
+      toast.success("Liste olusturuldu.");
+    })();
   }, [createList, currentUserId, newListName, userLists]);
 
   const loadListRows = React.useCallback(
@@ -365,7 +372,7 @@ export default function FavoritesManagementPage() {
   return (
     <div className="page-shell no-scrollbar overflow-y-auto">
       <div className="flex flex-col gap-5">
-        <div className="page-header-row">
+        <div className="page-header-row gap-3">
           <div className="space-y-1">
             {selectedList ? (
               <>
@@ -394,6 +401,7 @@ export default function FavoritesManagementPage() {
               setCreateError("");
               setCreateDialogOpen(true);
             }}
+            className="w-full sm:w-auto"
           >
             <Plus className="size-4" />
             Liste Oluştur
@@ -492,7 +500,7 @@ export default function FavoritesManagementPage() {
           </div>
         ) : !selectedList ? (
           <section className="rounded-xl border bg-card p-4">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {userLists.map((list) => (
                 <button
                   key={list.id}
@@ -515,7 +523,7 @@ export default function FavoritesManagementPage() {
           </section>
         ) : (
           <>
-            <div className="grid gap-3 md:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className={summaryCardClass()}>
                 <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Liste</div>
                 <div className="mt-2 text-2xl font-semibold tracking-tight">
@@ -556,7 +564,7 @@ export default function FavoritesManagementPage() {
                       if (!window.confirm(`${selectedList.name} listesini silmek istiyor musun?`)) {
                         return;
                       }
-                      deleteList(selectedList.id);
+                      void deleteList(selectedList.id, currentUserId || null);
                       toast.success("Liste silindi.");
                     }}
                   >
@@ -568,20 +576,22 @@ export default function FavoritesManagementPage() {
             </div>
 
             <section className="overflow-hidden rounded-xl border border-border/40 bg-card">
-              <div className="flex items-center justify-between border-b px-4 py-4">
+              <div className="flex flex-col gap-3 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-lg font-medium tracking-tight">{selectedList.name}</div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => void loadListRows(selectedList)}
+                  className="w-full sm:w-auto"
                 >
                   <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
                   Yenile
                 </Button>
               </div>
 
-              <table className="w-full border-collapse text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[980px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border/30 bg-muted/20 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     <th className="w-12 px-4 py-3.5 text-center">#</th>
@@ -725,7 +735,7 @@ export default function FavoritesManagementPage() {
                             size="icon-sm"
                             className="text-muted-foreground hover:text-rose-600"
                             onClick={() => {
-                              removeItemFromList(selectedList.id, row.symbol);
+                              void removeItemFromList(selectedList.id, row.symbol, currentUserId || null);
                               toast.success(`${row.symbol} listeden cikarildi.`);
                             }}
                           >
@@ -737,6 +747,7 @@ export default function FavoritesManagementPage() {
                   )}
                 </tbody>
               </table>
+              </div>
             </section>
           </>
         )}

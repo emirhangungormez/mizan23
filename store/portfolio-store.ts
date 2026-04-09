@@ -25,6 +25,7 @@ import {
   type PortfolioTargetMode,
   type PortfolioTargetProfile,
 } from "@/lib/portfolio-targets";
+import { useUserStore } from "@/store/user-store";
 
 export type { Portfolio, PortfolioAsset, PortfolioAnalysis, Transaction };
 
@@ -181,9 +182,19 @@ export const usePortfolioStore = create<PortfolioState>()(
       fetchPortfolios: async () => {
         set({ isLoading: true, error: null });
         try {
-          const rawPortfolios = await PortfolioService.getAll();
+          const userId = useUserStore.getState().currentUser?.id || null;
+          const rawPortfolios = await PortfolioService.getAll(userId);
           const portfolios = applyNormalizedPortfolios(rawPortfolios);
-          set({ portfolios, isLoading: false });
+          set((state) => ({
+            portfolios,
+            activePortfolioId: portfolios.some((item) => item.id === state.activePortfolioId)
+              ? state.activePortfolioId
+              : null,
+            activeAnalysis: portfolios.some((item) => item.id === state.activePortfolioId)
+              ? state.activeAnalysis
+              : null,
+            isLoading: false,
+          }));
         } catch (error) {
           set({
             isLoading: false,
@@ -195,7 +206,8 @@ export const usePortfolioStore = create<PortfolioState>()(
       createPortfolio: async (name: string) => {
         set({ isLoading: true, error: null });
         try {
-          const created = await PortfolioService.create({ name, assets: [] });
+          const userId = useUserStore.getState().currentUser?.id || null;
+          const created = await PortfolioService.create({ name, assets: [], userId });
           if (!created) {
             set({ isLoading: false });
             return null;

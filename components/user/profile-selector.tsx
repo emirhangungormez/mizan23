@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils";
 import { useUserStore, type User } from "@/store/user-store";
 
 const ROLE_LABELS: Record<User["role"], string> = {
-  admin: "Yönetici",
-  user: "Yatırımcı",
+  admin: "Yonetici",
+  user: "Yatirimci",
   guest: "Misafir",
 };
 
@@ -27,7 +27,7 @@ export function ProfileSelector() {
     const trimmedName = newName.trim();
 
     if (!trimmedName) {
-      setError("Yeni yatırımcı için bir isim yazın.");
+      setError("Yeni yatirimci icin bir isim yazin.");
       return;
     }
 
@@ -40,14 +40,21 @@ export function ProfileSelector() {
       return;
     }
 
-    addUser(trimmedName);
-    setNewName("");
-    setError("");
-    setIsAdding(false);
+    void (async () => {
+      const created = await addUser(trimmedName);
+      if (!created) {
+        setError("Profil olusturulamadi.");
+        return;
+      }
+
+      setNewName("");
+      setError("");
+      setIsAdding(false);
+    })();
   }, [addUser, newName, users]);
 
   const handleDeleteUser = React.useCallback((userId: string) => {
-    removeUser(userId);
+    void removeUser(userId);
   }, [removeUser]);
 
   return (
@@ -55,10 +62,10 @@ export function ProfileSelector() {
       <div className="w-full max-w-5xl px-6">
         <div className="text-center space-y-10">
           <div className="space-y-3">
-            <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Kim İşlem Yapıyor?</h1>
+            <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Kim Islem Yapiyor?</h1>
             <p className="mx-auto max-w-2xl text-sm text-muted-foreground md:text-base">
-              İşleme başlayacak profili seçin. İsterseniz bu ekrandan yeni yatırımcı ekleyebilir ya da
-              yönetim modunda mevcut profilleri silebilirsiniz.
+              Islemi baslatacak profili secin. Isterseniz bu ekrandan yeni yatirimci ekleyebilir ya da
+              yonetim modunda mevcut profilleri silebilirsiniz.
             </p>
           </div>
 
@@ -118,7 +125,7 @@ export function ProfileSelector() {
                         }}
                         disabled={users.length <= 1}
                         className="absolute -right-2 -top-2 inline-flex size-8 items-center justify-center rounded-full border border-rose-200 bg-background text-rose-600 shadow-sm transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
-                        title={users.length <= 1 ? "En az bir profil kalmalı" : `${user.name} profilini sil`}
+                        title={users.length <= 1 ? "En az bir profil kalmali" : `${user.name} profilini sil`}
                       >
                         <Trash2 className="size-4" />
                       </button>
@@ -157,7 +164,7 @@ export function ProfileSelector() {
               <div className="flex flex-col gap-4 md:flex-row md:items-end">
                 <div className="flex-1 space-y-2">
                   <label htmlFor="new-profile-name" className="text-sm font-medium text-foreground">
-                    Yeni yatırımcı adı
+                    Yeni yatirimci adi
                   </label>
                   <Input
                     id="new-profile-name"
@@ -171,14 +178,14 @@ export function ProfileSelector() {
                         handleCreateUser();
                       }
                     }}
-                    placeholder="Örn. Uzun Vade Portföyü"
+                    placeholder="Orn. Uzun Vade Portfoyu"
                     autoFocus={isAdding}
                   />
                   {error ? (
                     <p className="text-sm text-rose-600">{error}</p>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      Her profil ayrı tercih ve işlem akışı için kullanılabilir.
+                      Her profil ayri tercih ve islem akisi icin kullanilabilir.
                     </p>
                   )}
                 </div>
@@ -198,15 +205,15 @@ export function ProfileSelector() {
                     }}
                   >
                     <X className="size-4" />
-                    Vazgeç
+                    Vazgec
                   </Button>
                 </div>
               </div>
 
               {isManaging && (
                 <div className="mt-4 rounded-xl border border-dashed border-border/70 bg-background/60 px-4 py-3 text-sm text-muted-foreground">
-                  Yönetim modu açık. Profil kutularındaki çöp kutusu ile yatırımcı silebilirsiniz.
-                  En az bir profil sistemde kalmalıdır.
+                  Yonetim modu acik. Profil kutularindaki cop kutusu ile yatirimci silebilirsiniz.
+                  En az bir profil sistemde kalmalidir.
                 </div>
               )}
             </div>
@@ -218,7 +225,7 @@ export function ProfileSelector() {
               variant={isManaging ? "default" : "outline"}
               onClick={() => setIsManaging((current) => !current)}
             >
-              {isManaging ? "Yönetimi Bitir" : "Profilleri Yönet"}
+              {isManaging ? "Yonetimi Bitir" : "Profilleri Yonet"}
             </Button>
 
             {!isAdding && (
@@ -230,7 +237,7 @@ export function ProfileSelector() {
                   setError("");
                 }}
               >
-                Yeni Yatırımcı Ekle
+                Yeni Yatirimci Ekle
               </Button>
             )}
           </div>

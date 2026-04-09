@@ -61,6 +61,7 @@ export interface Transaction {
 
 export interface Portfolio {
     id: string;
+    userId?: string | null;
     name: string;
     description?: string;
     created_at: string;
@@ -267,6 +268,7 @@ export interface PortfolioAnalysis {
 }
 
 export interface CreatePortfolioRequest {
+    userId?: string | null;
     name: string;
     description?: string;
     currency?: string;
@@ -304,9 +306,10 @@ export class PortfolioService {
     /**
      * Get all portfolios from local JSON DB
      */
-    static async getAll(): Promise<Portfolio[]> {
+    static async getAll(userId?: string | null): Promise<Portfolio[]> {
         try {
-            const res = await fetchPortfolioApi("/api/portfolio", { cache: 'no-store' });
+            const suffix = userId ? `?userId=${encodeURIComponent(userId)}` : "";
+            const res = await fetchPortfolioApi(`/api/portfolio${suffix}`, { cache: 'no-store' });
             if (!res.ok) throw new Error("Failed to fetch portfolios");
             return await res.json();
         } catch (error) {
