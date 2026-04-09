@@ -153,7 +153,7 @@ async def initialize_asset_cache(force: bool = False):
     if _CACHE_INITIALIZED and not force:
         return
 
-    logger.info("[AssetSearch] %s asset cache...", "RELOADING" if force else "INITIALIZING")
+    logger.info(f"[AssetSearch] {'RELOADING' if force else 'INITIALIZING'} asset cache...")
     _ASSET_CACHE = _empty_asset_cache()
     _ASSET_CACHE["forex"] = _seed_forex_assets()
 
@@ -173,9 +173,9 @@ async def initialize_asset_cache(force: bool = False):
                     "market": "BIST",
                 })
         _ASSET_CACHE["stocks"] = stocks
-        logger.info("[AssetSearch] Loaded %s BIST stocks", len(stocks))
+        logger.info(f"[AssetSearch] Loaded {len(stocks)} BIST stocks")
     except Exception as exc:
-        logger.error("[AssetSearch] Error loading BIST stocks: %s", exc)
+        logger.error(f"[AssetSearch] Error loading BIST stocks: {exc}")
 
     try:
         logger.info("[AssetSearch] Fetching US stocks...")
@@ -186,9 +186,9 @@ async def initialize_asset_cache(force: bool = False):
             type_value="stock",
             default_market="ABD",
         )
-        logger.info("[AssetSearch] Loaded %s US stocks", len(_ASSET_CACHE["us_stocks"]))
+        logger.info(f"[AssetSearch] Loaded {len(_ASSET_CACHE['us_stocks'])} US stocks")
     except Exception as exc:
-        logger.warning("[AssetSearch] Could not load US stocks: %s", exc)
+        logger.warning(f"[AssetSearch] Could not load US stocks: {exc}")
 
     try:
         logger.info("[AssetSearch] Fetching crypto assets...")
@@ -199,9 +199,9 @@ async def initialize_asset_cache(force: bool = False):
             type_value="crypto",
             default_market="Kripto",
         )
-        logger.info("[AssetSearch] Loaded %s crypto assets", len(_ASSET_CACHE["crypto"]))
+        logger.info(f"[AssetSearch] Loaded {len(_ASSET_CACHE['crypto'])} crypto assets")
     except Exception as exc:
-        logger.warning("[AssetSearch] Could not load crypto assets: %s", exc)
+        logger.warning(f"[AssetSearch] Could not load crypto assets: {exc}")
 
     try:
         logger.info("[AssetSearch] Fetching commodities...")
@@ -212,9 +212,9 @@ async def initialize_asset_cache(force: bool = False):
             type_value="commodity",
             default_market="Emtia",
         )
-        logger.info("[AssetSearch] Loaded %s commodities", len(_ASSET_CACHE["commodities"]))
+        logger.info(f"[AssetSearch] Loaded {len(_ASSET_CACHE['commodities'])} commodities")
     except Exception as exc:
-        logger.warning("[AssetSearch] Could not load commodities: %s", exc)
+        logger.warning(f"[AssetSearch] Could not load commodities: {exc}")
 
     try:
         logger.info("[AssetSearch] Fetching funds...")
@@ -253,9 +253,9 @@ async def initialize_asset_cache(force: bool = False):
                         },
                     )
 
-        logger.info("[AssetSearch] Loaded %s funds", len(_ASSET_CACHE["funds"]))
+        logger.info(f"[AssetSearch] Loaded {len(_ASSET_CACHE['funds'])} funds")
     except Exception as exc:
-        logger.warning("[AssetSearch] Could not load funds: %s", exc)
+        logger.warning(f"[AssetSearch] Could not load funds: {exc}")
 
     for group in _ASSET_CACHE.values():
         for asset in group:
@@ -360,7 +360,7 @@ def _enrich_with_quotes(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             if item and item.get("symbol")
         }
     except Exception as exc:
-        logger.warning("[AssetSearch] Quote enrichment failed: %s", exc)
+        logger.warning(f"[AssetSearch] Quote enrichment failed: {exc}")
 
     enriched: List[Dict[str, Any]] = []
     for asset in results:
@@ -403,7 +403,7 @@ async def search_assets_endpoint(
             "results": results,
         }
     except Exception as exc:
-        logger.error("[AssetSearch] Search error: %s", exc)
+        logger.error(f"[AssetSearch] Search error: {exc}")
         return {
             "success": False,
             "error": str(exc),

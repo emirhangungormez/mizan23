@@ -88,7 +88,7 @@ async def enforce_admin_key(request: Request, call_next):
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info("%s baslatiliyor...", APP_NAME)
+    logger.info(f"{APP_NAME} baslatiliyor...")
     init_db()
     start_bist_refresh()
     logger.info("BIST arka plan yenilemesi basladi")
@@ -97,30 +97,30 @@ async def startup_event():
         start_benchmarks_refresh(15 * 60)
         logger.info("Benchmark yenilemesi basladi (15 dk)")
     except Exception as exc:
-        logger.warning("Benchmark yenilemesi baslatilamadi: %s", exc)
+        logger.warning(f"Benchmark yenilemesi baslatilamadi: {exc}")
 
     try:
         market_fetcher.start_analysis_snapshot_refresh()
         logger.info("Analiz snapshot yenilemesi basladi")
     except Exception as exc:
-        logger.warning("Analiz snapshot yenilemesi baslatilamadi: %s", exc)
+        logger.warning(f"Analiz snapshot yenilemesi baslatilamadi: {exc}")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    logger.info("%s kapatiliyor...", APP_NAME)
+    logger.info(f"{APP_NAME} kapatiliyor...")
     stop_bist_refresh()
 
     try:
         stop_benchmarks_refresh()
     except Exception as exc:
-        logger.warning("Benchmark yenilemesi durdurulamadi: %s", exc)
+        logger.warning(f"Benchmark yenilemesi durdurulamadi: {exc}")
 
     try:
         pool = get_connection_pool()
         pool.close_all()
     except Exception as exc:
-        logger.warning("Baglanti havuzu kapatilamadi: %s", exc)
+        logger.warning(f"Baglanti havuzu kapatilamadi: {exc}")
 
 
 @app.get("/")
@@ -178,7 +178,7 @@ async def get_cache_stats():
 async def clear_cache(namespace: str | None = None):
     if namespace:
         cache_manager.clear_namespace(namespace)
-        logger.info("Cache namespace temizlendi: %s", namespace)
+        logger.info(f"Cache namespace temizlendi: {namespace}")
         return {"message": f"Cache namespace temizlendi: {namespace}"}
 
     cache_manager.clear_all()
