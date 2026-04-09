@@ -109,7 +109,7 @@ function Require-Command([string]$name, [string]$wingetId) {
 
     Write-Warn "$name bulunamadi. winget ile kurulum deneniyor..."
     winget install $wingetId --silent --accept-package-agreements --accept-source-agreements | Out-Null
-    throw "$name kurulumu baslatildi. Kurulum tamamlaninca RUN_ALL.bat dosyasini tekrar calistirin."
+    throw "$name kurulumu baslatildi. Kurulum tamamlaninca mizan23.bat dosyasini tekrar calistirin."
 }
 
 function Update-RepositoryFromOrigin {
@@ -140,7 +140,7 @@ function Update-RepositoryFromOrigin {
         $dirtyState = (& git -C $repoRoot status --porcelain | Out-String).Trim()
         if ($dirtyState) {
             Write-Warn "Yerel degisiklik var. Repo otomatik cekilmedi."
-            Write-Warn "Degisiklikleri commit edin ya da stash alin; sonra RUN_ALL.bat tekrar cekebilir."
+            Write-Warn "Degisiklikleri commit edin ya da stash alin; sonra mizan23.bat tekrar cekebilir."
             return
         }
 
@@ -186,7 +186,7 @@ function Ensure-PythonRuntime {
 
     Write-Warn "Python bulunamadi. winget ile kurulum deneniyor..."
     winget install Python.Python.3.11 --silent --accept-package-agreements --accept-source-agreements | Out-Null
-    throw "Python kurulumu baslatildi. Kurulum tamamlaninca RUN_ALL.bat dosyasini tekrar calistirin."
+    throw "Python kurulumu baslatildi. Kurulum tamamlaninca mizan23.bat dosyasini tekrar calistirin."
 }
 
 function Resolve-PythonBootstrapCommand {
@@ -324,7 +324,7 @@ if (-not $SkipFirewall) {
         }
     } else {
         Write-Warn "Yonetici yetkisi olmadigi icin guvenlik duvari kurallari otomatik eklenemedi."
-        Write-Warn "Ayni agdan erisim olmazsa RUN_ALL.bat dosyasini Yonetici olarak calistirin."
+        Write-Warn "Ayni agdan erisim olmazsa mizan23.bat dosyasini Yonetici olarak calistirin."
     }
 }
 

@@ -1,12 +1,13 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title mizan23 Compatibility Launcher
-color 08
+title mizan23 Bootstrap
+color 0B
 
 echo.
-echo [UYARI] RUN_ALL.bat eski baslaticidir.
-echo [UYARI] Lutfen yeni giris noktasi olarak mizan23.bat kullanin.
+echo =============================================================
+echo                      mizan23 Bootstrap
+echo =============================================================
 echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\run-all.ps1" %*

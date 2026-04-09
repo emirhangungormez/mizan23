@@ -53,4 +53,4 @@ Install from:
 .\.venv\Scripts\python -m pip install -r requirements.txt
 ```
 
-The root `RUN_ALL.bat` script already handles this automatically on Windows.
+The root `mizan23.bat` script already handles this automatically on Windows.

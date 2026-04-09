@@ -31,7 +31,8 @@ Sistem; BIST, ABD hisseleri, kripto, emtia, fon, döviz, portföy yönetimi, fav
 17. [Health and Verification / Sağlık ve Doğrulama](#health-and-verification--sağlık-ve-doğrulama)
 18. [Git Update Flow / Git Güncelleme Akışı](#git-update-flow--git-güncelleme-akışı)
 19. [Troubleshooting / Sorun Giderme](#troubleshooting--sorun-giderme)
-20. [Disclaimer / Sorumluluk Reddi](#disclaimer--sorumluluk-reddi)
+20. [Acknowledgements / Teşekkür](#acknowledgements--teşekkür)
+21. [Disclaimer / Sorumluluk Reddi](#disclaimer--sorumluluk-reddi)
 
 ---
 
@@ -181,6 +182,20 @@ Aşağıdaki tablo, sistemin fiilen kullandığı veri kaynaklarını özetler.
 - BIST tarafında yapılandırılmış ve proprietary işleme katmanı öndedir
 - ABD ve bazı çapraz piyasa katmanlarında Yahoo Finance zenginleştirmesi kullanılır
 - Kripto ve emtiada hisse tipi değerleme yerine kategoriye özel sinyal mantığı kullanılır
+
+### borsapy note / borsapy notu
+
+#### EN
+
+`borsapy` is one of the most important building blocks of the BIST side of this platform.
+
+#### TR
+
+`borsapy`, bu platformun özellikle BIST tarafındaki en önemli yapı taşlarından biridir.
+
+We explicitly thank the maintainers and contributors of the `borsapy` ecosystem for making structured BIST-side development significantly more practical.
+
+`borsapy` ekosistemini hazırlayan ve geliştiren emeği geçen herkese özellikle teşekkür ederiz. BIST tarafında yapılandırılmış geliştirme yapmayı ciddi biçimde kolaylaştırmıştır.
 
 ---
 
@@ -513,7 +528,8 @@ mizan23/
 ├─ tools/                  # Başlatma ve doğrulama script'leri
 ├─ docs/                   # Teknik dokümanlar
 ├─ storage/                # Uygulama tarafı örnek/veri alanları
-└─ RUN_ALL.bat             # Windows tek tık başlatma
+├─ mizan23.bat             # Windows ana tek tık başlatıcı
+└─ RUN_ALL.bat             # Eski ad için uyumluluk başlatıcısı
 ```
 
 ---
@@ -545,7 +561,7 @@ Recommended environment:
 Use:
 
 ```powershell
-.\RUN_ALL.bat
+.\mizan23.bat
 ```
 
 ### EN
@@ -607,7 +623,7 @@ Typical usage:
 
 If access fails from another device:
 
-- run `RUN_ALL.bat` as administrator
+- run `mizan23.bat` as administrator
 - check firewall rules
 - ensure both devices are on the same network
 
@@ -664,7 +680,7 @@ Clone:
 ```powershell
 git clone https://github.com/emirhangungormez/mizan23.git
 cd mizan23
-.\RUN_ALL.bat
+.\mizan23.bat
 ```
 
 Manual update flow:
@@ -675,9 +691,9 @@ git commit -m "Mesaj"
 git push origin main
 ```
 
-`RUN_ALL.bat` can also pull the latest changes automatically when the worktree is clean.
+`mizan23.bat` can also pull the latest changes automatically when the worktree is clean.
 
-`RUN_ALL.bat`, çalışma ağacı temiz olduğunda son değişiklikleri otomatik çekebilir.
+`mizan23.bat`, çalışma ağacı temiz olduğunda son değişiklikleri otomatik çekebilir.
 
 ---
 
@@ -701,6 +717,24 @@ git push origin main
 
 - engine health kontrol et
 - `.run/engine.err.log` dosyasına bak
+
+---
+
+## Acknowledgements / Teşekkür
+
+### EN
+
+Special thanks to the `borsapy` maintainers and contributors.  
+This project benefits significantly from the work done around structured BIST-side data access and market tooling.
+
+### TR
+
+`borsapy` bakımcılarına ve katkı sağlayanlara özel teşekkür ederiz.  
+Bu proje, özellikle BIST tarafında yapılandırılmış veri erişimi ve piyasa araçları konusunda `borsapy` tarafından sağlanan emekten önemli ölçüde faydalanmaktadır.
+
+In the BIST domain, `mizan23` stands on top of serious prior work. We consider it important to acknowledge that contribution openly.
+
+BIST alanında `mizan23`, ciddi bir ön emeğin üzerine kuruludur. Bu katkıyı açıkça anmayı önemli görüyoruz.
 
 ---
 
