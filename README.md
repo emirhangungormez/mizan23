@@ -4,7 +4,7 @@ Professional local-first market intelligence, recommendation, and portfolio deci
 
 Yerel çalışan, çoklu piyasa destekli, öneri ve portföy karar destek platformu.
 
-![mizan23 overview](./public/mizan23-overview.svg)
+![mizan23 dashboard](./docs/images/dashboard-home.png)
 
 ## İçindekiler
 
@@ -55,7 +55,7 @@ Ana modüller:
 <details open>
 <summary><strong>3. Mimari</strong></summary>
 
-![mizan23 architecture](./public/mizan23-architecture.svg)
+![mizan23 markets](./docs/images/markets-bist.png)
 
 Sistem iki ana katmandan oluşur:
 
@@ -557,13 +557,12 @@ Example:
 
 ## Visuals
 
-README is now structured to support a public-facing release. The next recommended step is to add real product screenshots under a dedicated folder such as:
+### Product Screens
 
-- `docs/images/dashboard.png`
-- `docs/images/markets-bist.png`
-- `docs/images/asset-detail.png`
-- `docs/images/portfolio.png`
-- `docs/images/outcomes.png`
+| Area | Preview |
+|---|---|
+| Dashboard | ![Dashboard](./docs/images/dashboard-home.png) |
+| BIST Markets | ![BIST Markets](./docs/images/markets-bist.png) |
+| Asset Detail | ![Asset Detail](./docs/images/asset-detail-financials.png) |
 
-Once those images are added, they can be embedded into both Turkish and English sections.
-
+These screenshots are taken from the live product and are intended to represent the current UI rather than placeholder mockups.
