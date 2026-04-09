@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 // Shared context type passed down from the single top-level calculator
 interface SharedCalcContext {
@@ -44,10 +46,13 @@ type MarketDataSnapshot = {
 };
 
 export function PortfolioList() {
-  const { portfolios, deletePortfolio } = usePortfolioStore();
+  const { portfolios, deletePortfolio, renamePortfolio } = usePortfolioStore();
   const [orderedPortfolios, setOrderedPortfolios] = useState(portfolios);
   const [mounted, setMounted] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [renameName, setRenameName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
 
   // ─── SINGLE shared calculator for ALL portfolios ───────────────────────────
   const sharedCalc = usePerformanceCalculator(portfolios);
@@ -102,6 +107,34 @@ export function PortfolioList() {
     localStorage.setItem("portfolio_order", JSON.stringify(newOrder.map((p) => p.id)));
   };
 
+  const selectedRenamePortfolio = renameId ? portfolios.find((item) => item.id === renameId) || null : null;
+
+  const handleRename = async () => {
+    if (!renameId) return;
+
+    const nextName = renameName.trim();
+    if (!nextName) {
+      toast.error("Sepet ismi bos olamaz.");
+      return;
+    }
+
+    setIsRenaming(true);
+    try {
+      const success = await renamePortfolio(renameId, nextName);
+      if (success) {
+        toast.success("Sepet ismi guncellendi.");
+        setRenameId(null);
+        setRenameName("");
+      } else {
+        toast.error("Sepet ismi guncellenemedi.");
+      }
+    } catch {
+      toast.error("Sepet ismi guncellenirken beklenmedik bir hata olustu.");
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
   if (portfolios.length === 0) {
     return (
       <div className="flex h-full min-h-[14rem] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-background px-5 py-10 text-center">
@@ -134,7 +167,16 @@ export function PortfolioList() {
     <>
       <Reorder.Group values={orderedPortfolios} onReorder={handleReorder} axis="y" className="flex flex-col gap-2">
         {orderedPortfolios.map((portfolio) => (
-          <PortfolioRow key={portfolio.id} portfolio={portfolio} onDelete={() => setDeleteId(portfolio.id)} ctx={ctx} />
+          <PortfolioRow
+            key={portfolio.id}
+            portfolio={portfolio}
+            onDelete={() => setDeleteId(portfolio.id)}
+            onRename={() => {
+              setRenameId(portfolio.id);
+              setRenameName(portfolio.name);
+            }}
+            ctx={ctx}
+          />
         ))}
       </Reorder.Group>
 
@@ -161,6 +203,73 @@ export function PortfolioList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={!!renameId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRenameId(null);
+            setRenameName("");
+            setIsRenaming(false);
+          }
+        }}
+      >
+        <DialogContent className="overflow-hidden rounded-[1.5rem] border bg-card p-0 shadow-none sm:max-w-[460px]">
+          <div className="p-6 sm:p-7">
+            <div className="mb-6">
+              <div className="text-[11px] uppercase tracking-[0.28em] text-muted-foreground">Sepet Duzenle</div>
+              <DialogTitle className="mt-2 text-2xl font-medium tracking-tight">Sepet ismini degistir</DialogTitle>
+              <DialogDescription className="mt-2 text-sm leading-6 text-muted-foreground">
+                {selectedRenamePortfolio?.name
+                  ? `"${selectedRenamePortfolio.name}" sepeti icin yeni bir isim belirleyin.`
+                  : "Sepet icin yeni bir isim belirleyin."}
+              </DialogDescription>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="rename-portfolio-name" className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+                Yeni sepet adi
+              </label>
+              <Input
+                id="rename-portfolio-name"
+                placeholder="Orn. Temettu Sepeti"
+                value={renameName}
+                onChange={(event) => setRenameName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void handleRename();
+                  }
+                }}
+                className="h-12 rounded-2xl border bg-background px-4 text-sm"
+                autoFocus
+              />
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setRenameId(null);
+                  setRenameName("");
+                }}
+                className="h-11 flex-1 rounded-2xl"
+              >
+                Vazgec
+              </Button>
+              <Button
+                type="button"
+                disabled={isRenaming || !renameName.trim()}
+                onClick={() => void handleRename()}
+                className="h-11 flex-[1.4] rounded-2xl border border-border/70 bg-background text-foreground shadow-none hover:bg-muted/40"
+              >
+                {isRenaming ? "Kaydediliyor" : "Ismi guncelle"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -168,10 +277,12 @@ export function PortfolioList() {
 function PortfolioRow({
   portfolio,
   onDelete,
+  onRename,
   ctx,
 }: {
   portfolio: PortfolioType;
   onDelete: (id: string) => void;
+  onRename: () => void;
   ctx: SharedCalcContext;
 }) {
   const controls = useDragControls();
@@ -448,6 +559,17 @@ function PortfolioRow({
               <PencilLine className="size-4" />
             </Link>
           </Button>
+          <button
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onRename();
+            }}
+            title="Sepet ismini degistir"
+            className="rounded-lg border bg-background p-2 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <PencilLine className="size-4" />
+          </button>
           <button
             onClick={(event) => {
               event.preventDefault();

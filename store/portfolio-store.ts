@@ -79,6 +79,7 @@ interface PortfolioState {
   fetchPortfolios: () => Promise<void>;
   createPortfolio: (name: string) => Promise<Portfolio | null>;
   deletePortfolio: (id: string) => Promise<boolean>;
+  renamePortfolio: (id: string, name: string) => Promise<boolean>;
   setActivePortfolio: (id: string) => void;
   updatePortfolioAssets: (portfolioId: string, assets: PortfolioAsset[]) => Promise<boolean>;
   updateAssetSettings: (
@@ -258,6 +259,36 @@ export const usePortfolioStore = create<PortfolioState>()(
           set({
             isLoading: false,
             error: error instanceof Error ? error.message : "Failed to delete portfolio",
+          });
+          return false;
+        }
+      },
+
+      renamePortfolio: async (id: string, name: string) => {
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+          set({ error: "Sepet adi bos olamaz." });
+          return false;
+        }
+
+        set({ isLoading: true, error: null });
+        try {
+          const updated = await PortfolioService.update(id, { name: trimmedName });
+          if (!updated) {
+            set({ isLoading: false, error: "Sepet adi guncellenemedi" });
+            return false;
+          }
+
+          const normalized = normalizePortfolio(updated);
+          set((state) => ({
+            portfolios: state.portfolios.map((portfolio) => (portfolio.id === id ? normalized : portfolio)),
+            isLoading: false,
+          }));
+          return true;
+        } catch (error) {
+          set({
+            isLoading: false,
+            error: error instanceof Error ? error.message : "Failed to rename portfolio",
           });
           return false;
         }
