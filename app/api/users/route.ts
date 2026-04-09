@@ -22,7 +22,7 @@ const DATA_FILE = path.join(process.cwd(), "data", "users.json");
 const DEFAULT_USERS: ApiUser[] = [
   {
     id: "u1",
-    name: "Emirhan",
+    name: "Yonetici",
     role: "admin",
     preferences: { theme: "dark" },
     createdAt: "2026-01-01T00:00:00.000Z",

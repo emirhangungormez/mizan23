@@ -1,0 +1,32 @@
+[
+  {
+    "id": "u1",
+    "name": "Yonetici",
+    "role": "admin",
+    "preferences": {
+      "theme": "dark"
+    },
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "u2",
+    "name": "Yatirimci",
+    "role": "user",
+    "preferences": {
+      "theme": "system"
+    },
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "u3",
+    "name": "Misafir",
+    "role": "guest",
+    "preferences": {
+      "theme": "light"
+    },
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z"
+  }
+]

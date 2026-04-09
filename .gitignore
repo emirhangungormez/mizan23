@@ -96,5 +96,10 @@ engine-python/storage/proprietary_snapshots/
 storage/*.json
 storage/*.db
 
+# local shared app state
+data/users.json
+data/favorites.json
+data/portfolios.json
+
 # optional local legacy frontend
 vanilla_frontend/Stonks/
