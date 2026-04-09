@@ -282,6 +282,12 @@ function resolvePortfolioApiUrl(pathname: string): string {
     return new URL(pathname, window.location.origin).toString();
 }
 
+function withUserId(pathname: string, userId?: string | null): string {
+    if (!userId) return pathname;
+    const separator = pathname.includes("?") ? "&" : "?";
+    return `${pathname}${separator}userId=${encodeURIComponent(userId)}`;
+}
+
 async function fetchPortfolioApi(pathname: string, init?: RequestInit, retries: number = 2): Promise<Response> {
     let lastError: unknown;
     for (let attempt = 0; attempt <= retries; attempt += 1) {
@@ -323,7 +329,8 @@ export class PortfolioService {
      */
     static async getById(portfolioId: string): Promise<Portfolio | null> {
         try {
-            const res = await fetchPortfolioApi(`/api/portfolio/${portfolioId}`, { cache: 'no-store' });
+            const userId = useUserStore.getState().currentUser?.id || null;
+            const res = await fetchPortfolioApi(withUserId(`/api/portfolio/${portfolioId}`, userId), { cache: 'no-store' });
             if (!res.ok) return null;
             return await res.json();
         } catch (error) {
@@ -355,7 +362,8 @@ export class PortfolioService {
      */
     static async update(portfolioId: string, updates: Partial<Portfolio>): Promise<Portfolio | null> {
         try {
-            const res = await fetchPortfolioApi(`/api/portfolio/${portfolioId}`, {
+            const userId = useUserStore.getState().currentUser?.id || null;
+            const res = await fetchPortfolioApi(withUserId(`/api/portfolio/${portfolioId}`, userId), {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updates)
@@ -373,7 +381,8 @@ export class PortfolioService {
      */
     static async delete(portfolioId: string): Promise<boolean> {
         try {
-            const res = await fetchPortfolioApi(`/api/portfolio/${portfolioId}`, { method: "DELETE" });
+            const userId = useUserStore.getState().currentUser?.id || null;
+            const res = await fetchPortfolioApi(withUserId(`/api/portfolio/${portfolioId}`, userId), { method: "DELETE" });
             return res.ok;
         } catch (error) {
             console.error("[PortfolioService] Delete failed:", error);

@@ -5,11 +5,17 @@ import { ensureJsonFile, writeJsonFile } from '@/lib/server/json-storage';
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'portfolios.json');
 
-function readData() {
-    return ensureJsonFile<any[]>(DATA_FILE, []);
+type PortfolioRecord = {
+    id: string;
+    userId?: string | null;
+    [key: string]: unknown;
+};
+
+function readData(): PortfolioRecord[] {
+    return ensureJsonFile<PortfolioRecord[]>(DATA_FILE, []);
 }
 
-function saveData(data: any) {
+function saveData(data: PortfolioRecord[]) {
     writeJsonFile(DATA_FILE, data);
 }
 
@@ -18,8 +24,10 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
     const portfolios = readData();
-    const portfolio = portfolios.find((p: any) => p.id === id);
+    const portfolio = portfolios.find((p) => p.id === id && (!userId || p.userId === userId));
 
     if (!portfolio) {
         return new NextResponse('Portfolio not found', { status: 404 });
@@ -33,9 +41,11 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
     let portfolios = readData();
     const initialLength = portfolios.length;
-    portfolios = portfolios.filter((p: any) => p.id !== id);
+    portfolios = portfolios.filter((p) => !(p.id === id && (!userId || p.userId === userId)));
 
     if (portfolios.length === initialLength) {
         return new NextResponse('Portfolio not found', { status: 404 });
@@ -50,9 +60,11 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
-    const body = await request.json();
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+    const body = (await request.json()) as Record<string, unknown>;
     const portfolios = readData();
-    const index = portfolios.findIndex((p: any) => p.id === id);
+    const index = portfolios.findIndex((p) => p.id === id && (!userId || p.userId === userId));
 
     if (index === -1) {
         return new NextResponse('Portfolio not found', { status: 404 });

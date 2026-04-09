@@ -303,10 +303,18 @@ function Update-RepositoryFromOrigin {
         }
 
         $dirtyState = (& $gitPath -C $repoRoot status --porcelain | Out-String).Trim()
+        $autoStashed = $false
+        $autoStashName = "mizan23-auto-update-$(Get-Date -Format 'yyyyMMddHHmmss')"
         if ($dirtyState) {
-            Write-Warn "Yerel degisiklik var. Repo otomatik cekilmedi."
-            Write-Warn "Degisiklikleri commit edin ya da stash alin; sonra mizan23.bat tekrar cekebilir."
-            return
+            Write-Warn "Yerel degisiklik bulundu. Otomatik stash ile guncelleme denenecek."
+            & $gitPath -C $repoRoot stash push --include-untracked -m $autoStashName
+            if ($LASTEXITCODE -eq 0) {
+                $autoStashed = $true
+                Write-Ok "Yerel degisiklikler gecici olarak stash'e alindi."
+            } else {
+                Write-Warn "Yerel degisiklikler stash'e alinamadi. Mevcut kod ile devam ediliyor."
+                return
+            }
         }
 
         $branch = (& $gitPath -C $repoRoot branch --show-current | Out-String).Trim()
@@ -332,8 +340,19 @@ function Update-RepositoryFromOrigin {
         & $gitPath -C $repoRoot pull --ff-only
         if ($LASTEXITCODE -eq 0) {
             Write-Ok "Repo origin uzerinden guncellendi."
+            if ($autoStashed) {
+                & $gitPath -C $repoRoot stash pop
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Ok "Yerel degisiklikler geri yuklendi."
+                } else {
+                    Write-Warn "Stash geri yuklenirken sorun oldu. Gerekirse 'git stash list' ile kontrol edin."
+                }
+            }
         } else {
             Write-Warn "Repo otomatik cekilemedi. Mevcut kod ile devam ediliyor."
+            if ($autoStashed) {
+                & $gitPath -C $repoRoot stash pop | Out-Null
+            }
         }
     } catch {
         Write-Warn "Repo guncellemesi sirasinda hata olustu: $($_.Exception.Message)"

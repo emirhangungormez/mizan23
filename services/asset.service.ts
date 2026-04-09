@@ -3,7 +3,12 @@
  * Handles searching for all available assets across markets
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+function getApiBaseUrl() {
+    if (typeof window !== "undefined") {
+        return window.location.origin;
+    }
+    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+}
 
 export interface AssetSearchResult {
     symbol: string;
@@ -54,7 +59,7 @@ export async function searchAssets(
             limit: limit.toString()
         });
 
-        const response = await fetch(`${API_BASE_URL}/api/assets/search?${params}`);
+        const response = await fetch(`${getApiBaseUrl()}/api/assets/search?${params}`);
 
         if (!response.ok) {
             throw new Error(`Search failed: ${response.status}`);
@@ -78,7 +83,7 @@ export async function searchAssets(
  */
 export async function getAssetStats(): Promise<AssetStats | null> {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/python/assets/stats`);
+        const response = await fetch(`${getApiBaseUrl()}/api/python/assets/stats`);
 
         if (!response.ok) {
             throw new Error(`Stats fetch failed: ${response.status}`);

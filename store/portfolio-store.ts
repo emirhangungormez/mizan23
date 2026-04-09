@@ -119,19 +119,24 @@ const DEFAULT_METRICS: GlobalMetrics = {
   displayCurrency: "TRY",
 };
 
+const PORTFOLIO_STORAGE_KEY = "mizan23-portfolio-ui";
+
 if (typeof window !== "undefined") {
   try {
-    const stored = localStorage.getItem("portfolio-storage");
+    localStorage.removeItem("portfolio-storage");
+    const stored = localStorage.getItem(PORTFOLIO_STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (parsed?.state?.globalMetrics?.totalValue && parsed.state.globalMetrics.totalValue > 0) {
-        parsed.state.globalMetrics = {
+      parsed.state = {
+        portfolios: [],
+        activePortfolioId: null,
+        globalMetrics: {
           ...DEFAULT_METRICS,
-          displayCurrency: parsed.state.globalMetrics.displayCurrency || "TRY",
-          selectedTimeframe: parsed.state.globalMetrics.selectedTimeframe || "1D",
-        };
-        localStorage.setItem("portfolio-storage", JSON.stringify(parsed));
-      }
+          displayCurrency: parsed?.state?.globalMetrics?.displayCurrency || "TRY",
+          selectedTimeframe: parsed?.state?.globalMetrics?.selectedTimeframe || "1D",
+        },
+      };
+      localStorage.setItem(PORTFOLIO_STORAGE_KEY, JSON.stringify(parsed));
     }
   } catch {
     // Ignore storage migration failures.
@@ -558,9 +563,9 @@ export const usePortfolioStore = create<PortfolioState>()(
       clearError: () => set({ error: null }),
     }),
     {
-      name: "portfolio-storage",
+      name: PORTFOLIO_STORAGE_KEY,
       partialize: (state) => ({
-        portfolios: state.portfolios,
+        portfolios: [],
         activePortfolioId: state.activePortfolioId,
         globalMetrics: {
           ...DEFAULT_METRICS,
