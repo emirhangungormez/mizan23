@@ -251,6 +251,13 @@ function Ensure-PythonRuntime {
 }
 
 function Resolve-PythonBootstrapCommand([string]$resolvedPythonPath) {
+    if ($resolvedPythonPath) {
+        return @{
+            FilePath = $resolvedPythonPath
+            Prefix = @()
+        }
+    }
+
     if (Get-Command "py" -ErrorAction SilentlyContinue) {
         foreach ($candidate in @("-3.11", "-3", "")) {
             try {
@@ -267,13 +274,6 @@ function Resolve-PythonBootstrapCommand([string]$resolvedPythonPath) {
                 }
             } catch {
             }
-        }
-    }
-
-    if ($resolvedPythonPath) {
-        return @{
-            FilePath = $resolvedPythonPath
-            Prefix = @()
         }
     }
 
