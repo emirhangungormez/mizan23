@@ -16,6 +16,7 @@ set EXIT_CODE=%ERRORLEVEL%
 if not "%EXIT_CODE%"=="0" (
   echo.
   echo mizan23 baslatma islemi %EXIT_CODE% kodu ile sonlandi.
+  echo Gerekirse mizan23.bat dosyasini Yonetici olarak calistirin.
   pause
 )
 

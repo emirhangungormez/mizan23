@@ -24,6 +24,7 @@ $nodeLockFile = Join-Path $repoRoot "package-lock.json"
 $nodeStamp = Join-Path $setupDir "node-deps.sha256"
 $pythonStamp = Join-Path $setupDir "python-deps.sha256"
 $adminKeyFile = Join-Path $setupDir "mizan23-admin-key.txt"
+$originRepoUrl = "https://github.com/emirhangungormez/mizan23.git"
 
 New-Item -ItemType Directory -Force -Path $runDir, $setupDir | Out-Null
 
@@ -156,59 +157,102 @@ function Find-PythonExecutable {
     return $null
 }
 
+function Ensure-GitCommand {
+    $git = Get-Command "git" -ErrorAction SilentlyContinue
+    if ($git) {
+        return $git.Source
+    }
+
+    throw "git komutu bulunamadi. Bu klasoru repo haline getirmek icin Git gerekli. Lutfen Git kurup tekrar deneyin."
+}
+
+function Bootstrap-RepositoryMetadata {
+    param(
+        [string]$GitPath
+    )
+
+    Write-Step "Git repo metadatasi bulunamadi, klasor repo haline getiriliyor"
+
+    $tempCloneDir = Join-Path $setupDir "repo-bootstrap"
+    if (Test-Path $tempCloneDir) {
+        Remove-Item -LiteralPath $tempCloneDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    & $GitPath clone --depth 1 $originRepoUrl $tempCloneDir
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $tempCloneDir ".git"))) {
+        throw "Repo bootstrap islemi basarisiz oldu. Lutfen mizan23.bat dosyasini tekrar deneyin."
+    }
+
+    $robocopyLog = Join-Path $runDir "repo-bootstrap.log"
+    $null = Start-Process -FilePath "robocopy.exe" -ArgumentList @(
+        $tempCloneDir,
+        $repoRoot,
+        "/E",
+        "/NFL",
+        "/NDL",
+        "/NJH",
+        "/NJS",
+        "/NP",
+        "/R:1",
+        "/W:1",
+        "/XD", ".git", "node_modules", ".next", ".run", ".setup", "engine-python\\.venv"
+    ) -Wait -PassThru -NoNewWindow -RedirectStandardOutput $robocopyLog
+
+    Copy-Item -LiteralPath (Join-Path $tempCloneDir ".git") -Destination (Join-Path $repoRoot ".git") -Recurse -Force
+    Remove-Item -LiteralPath $tempCloneDir -Recurse -Force -ErrorAction SilentlyContinue
+
+    Write-Ok "Klasor git repo yapisina kavustu ve guncel kod yuklendi."
+}
+
 function Update-RepositoryFromOrigin {
     if ($SkipGitPull) {
         Write-Warn "Git guncellemesi atlandi."
         return
     }
 
-    if (-not (Test-Path (Join-Path $repoRoot ".git"))) {
-        Write-Info "Bu klasorde .git bulunamadi. Muhtemelen zip ile acildi; otomatik guncelleme atlandi."
-        return
-    }
+    $gitPath = Ensure-GitCommand
 
-    if (-not (Get-Command "git" -ErrorAction SilentlyContinue)) {
-        Write-Warn "git bulunamadi. Guncel kod cekme adimi atlandi."
-        return
+    if (-not (Test-Path (Join-Path $repoRoot ".git"))) {
+        Bootstrap-RepositoryMetadata -GitPath $gitPath
     }
 
     Write-Step "Repo guncelligi kontrol ediliyor"
 
     try {
-        & git -C $repoRoot fetch --prune origin
+        & $gitPath -C $repoRoot fetch --prune origin
         if ($LASTEXITCODE -ne 0) {
             Write-Warn "origin fetch basarisiz oldu. Mevcut kod ile devam ediliyor."
             return
         }
 
-        $dirtyState = (& git -C $repoRoot status --porcelain | Out-String).Trim()
+        $dirtyState = (& $gitPath -C $repoRoot status --porcelain | Out-String).Trim()
         if ($dirtyState) {
             Write-Warn "Yerel degisiklik var. Repo otomatik cekilmedi."
             Write-Warn "Degisiklikleri commit edin ya da stash alin; sonra mizan23.bat tekrar cekebilir."
             return
         }
 
-        $branch = (& git -C $repoRoot branch --show-current | Out-String).Trim()
+        $branch = (& $gitPath -C $repoRoot branch --show-current | Out-String).Trim()
         if (-not $branch) {
             Write-Warn "Aktif branch bulunamadi. Repo otomatik cekilmedi."
             return
         }
 
-        $upstream = (& git -C $repoRoot rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>$null | Out-String).Trim()
+        $upstream = (& $gitPath -C $repoRoot rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>$null | Out-String).Trim()
         if (-not $upstream) {
             Write-Warn "Upstream branch tanimli degil. Repo otomatik cekilmedi."
             return
         }
 
-        $localCommit = (& git -C $repoRoot rev-parse HEAD | Out-String).Trim()
-        $remoteCommit = (& git -C $repoRoot rev-parse $upstream | Out-String).Trim()
+        $localCommit = (& $gitPath -C $repoRoot rev-parse HEAD | Out-String).Trim()
+        $remoteCommit = (& $gitPath -C $repoRoot rev-parse $upstream | Out-String).Trim()
 
         if ($localCommit -eq $remoteCommit) {
             Write-Ok "Repo zaten guncel."
             return
         }
 
-        & git -C $repoRoot pull --ff-only
+        & $gitPath -C $repoRoot pull --ff-only
         if ($LASTEXITCODE -eq 0) {
             Write-Ok "Repo origin uzerinden guncellendi."
         } else {
