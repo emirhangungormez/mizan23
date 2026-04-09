@@ -29,6 +29,7 @@ import { FastInfoCard } from "@/components/company/fast-info-card";
 import { SupertrendIndicator } from "@/components/company/supertrend-indicator";
 import { TradingViewAdvancedChart } from "@/components/charts/tradingview-advanced-chart";
 import { FavoriteListPicker } from "@/components/favorites/favorite-list-picker";
+import { AnalysisService, type AssetAnalysis } from "@/services/analysis.service";
 
 // Period configuration
 const PERIODS = [
@@ -216,6 +217,11 @@ function getSignalTone(score?: number) {
     return "text-slate-600 bg-slate-500/10 border-slate-500/20";
 }
 
+function normalizeScore(value?: number | null) {
+    if (value === undefined || value === null || Number.isNaN(value)) return 0;
+    return value <= 1 ? value * 100 : value;
+}
+
 // Helper to determine asset type
 function getAssetType(symbol: string): "STOCK" | "INDEX" | "FOREX" | "CRYPTO" | "FUND" {
     // Indices (BIST and Global)
@@ -261,6 +267,7 @@ export default function AssetDetailPage() {
     const [constituents, setConstituents] = React.useState<IndexConstituent[]>([]);
     const [loadingConstituents, setLoadingConstituents] = React.useState(false);
     const [proprietarySnapshot, setProprietarySnapshot] = React.useState<BistProprietarySnapshot | null>(null);
+    const [technicalAnalysis, setTechnicalAnalysis] = React.useState<AssetAnalysis | null>(null);
     const [activeSection, setActiveSection] = React.useState("overview");
     const [chartSurface, setChartSurface] = React.useState<"tradingview" | "native">("tradingview");
     const [chartType, setChartType] = React.useState<"line" | "candle" | "ha">("line");
@@ -393,9 +400,10 @@ export default function AssetDetailPage() {
         setError(null);
 
         try {
-            const [detailsResult, bistSnapshotResult] = await Promise.allSettled([
+            const [detailsResult, bistSnapshotResult, analysisResult] = await Promise.allSettled([
                 fetchAssetDetails(symbol, p) as Promise<AssetDetailData>,
                 assetType === "STOCK" ? fetchBistStockSnapshot(symbol) : Promise.resolve(null),
+                AnalysisService.analyzeAsset(symbol),
             ]);
             if (detailsResult.status !== "fulfilled") {
                 throw detailsResult.reason;
@@ -403,12 +411,17 @@ export default function AssetDetailPage() {
 
             const details = detailsResult.value;
             const bistSnapshot = bistSnapshotResult.status === "fulfilled" ? bistSnapshotResult.value : null;
+            const analysis = analysisResult.status === "fulfilled" ? analysisResult.value : null;
 
             setData(details);
             setProprietarySnapshot(bistSnapshot);
+            setTechnicalAnalysis(analysis);
 
             if (bistSnapshotResult.status === "rejected") {
                 console.warn("[BIST Snapshot] Optional snapshot fetch failed:", bistSnapshotResult.reason);
+            }
+            if (analysisResult.status === "rejected") {
+                console.warn("[Technical Analysis] Optional analysis fetch failed:", analysisResult.reason);
             }
 
             // Cache successful response
@@ -849,6 +862,65 @@ export default function AssetDetailPage() {
                                                 )}
                                             </div>
                                         </div>
+                                    </div>
+                                )}
+
+                                {activeSection === "score" && (!proprietarySnapshot) && technicalAnalysis && (
+                                    <div className="space-y-4">
+                                        <div className="rounded-2xl border bg-card p-5">
+                                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                                <div>
+                                                    <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Teknik Skor Analizi</p>
+                                                    <h2 className="mt-2 text-2xl font-bold tracking-tight">{technicalAnalysis.recommendation_class || "Izle"}</h2>
+                                                    <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                                                        Bu varlik icin BIST proprietary snapshot bulunamadigi icin genel teknik analiz motoru gosteriliyor.
+                                                        Entropi, Hurst, volatilite ve rejim sinyali Python motorunda hesaplanir.
+                                                    </p>
+                                                </div>
+                                                <span className={cn("inline-flex min-w-20 justify-center rounded-lg border px-3 py-2 text-lg font-bold", getSignalTone(normalizeScore(technicalAnalysis.score)))}>
+                                                    {Math.round(normalizeScore(technicalAnalysis.score))}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                            <ProprietaryMetricCard
+                                                title="Genel Skor"
+                                                score={normalizeScore(technicalAnalysis.score)}
+                                                description={`Rejim: ${technicalAnalysis.regime || "Bilinmiyor"}. Trend gucu: ${technicalAnalysis.trend_strength || "hazirlaniyor"}.`}
+                                                icon={Gauge}
+                                            />
+                                            <ProprietaryMetricCard
+                                                title="Olasilik"
+                                                score={normalizeScore(technicalAnalysis.probability_up)}
+                                                description={`Yukari olasilik ${Math.round(normalizeScore(technicalAnalysis.probability_up))}/100, asagi olasilik ${Math.round(normalizeScore(technicalAnalysis.probability_down))}/100.`}
+                                                icon={Sparkles}
+                                            />
+                                            <ProprietaryMetricCard
+                                                title="Oynaklik"
+                                                score={Math.max(0, Math.min(100, 100 - normalizeScore(technicalAnalysis.volatility)))}
+                                                description={`Volatilite ${normalizeScore(technicalAnalysis.volatility).toFixed(1)}/100. Risk bandi: ${technicalAnalysis.risk_band || "belirsiz"}.`}
+                                                icon={Waves}
+                                            />
+                                            <ProprietaryMetricCard
+                                                title="Tahmin Edilebilirlik"
+                                                score={Math.max(0, Math.min(100, 100 - normalizeScore(technicalAnalysis.entropy)))}
+                                                description={`Entropi ${normalizeScore(technicalAnalysis.entropy).toFixed(1)}/100, Hurst ${Number(technicalAnalysis.hurst ?? 0).toFixed(2)}.`}
+                                                icon={ShieldCheck}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeSection === "score" && (!proprietarySnapshot) && !technicalAnalysis && (
+                                    <div className="rounded-2xl border border-dashed bg-card p-8 text-center">
+                                        <h2 className="text-lg font-bold tracking-tight">Skor analizi hazirlaniyor</h2>
+                                        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+                                            Bu varlik icin proprietary snapshot veya teknik analiz verisi henuz alinamadi. Veri motoru hazir oldugunda bu alan otomatik dolar.
+                                        </p>
+                                        <Button className="mt-4" size="sm" onClick={() => fetchData()}>
+                                            Tekrar Dene
+                                        </Button>
                                     </div>
                                 )}
 

@@ -310,11 +310,23 @@ def _build_position_card(
 
     snap = snapshot or {}
     snapshot_available = bool(snap)
-    firsat = _safe_float(snap.get("firsat_skoru")) if snapshot_available else 50.0
-    trade = _safe_float(snap.get("trade_skoru")) if snapshot_available else 50.0
-    long_score = _safe_float(snap.get("uzun_vade_skoru")) if snapshot_available else 50.0
-    radar = _safe_float(snap.get("radar_skoru")) if snapshot_available else 50.0
-    hakiki_alfa_pct = _safe_float((snap.get("hakiki_alfa") or {}).get("hakiki_alfa_pct"))
+    quote_change_pct = _safe_float((quote or {}).get("change_percent"))
+    if snapshot_available:
+        firsat = _safe_float(snap.get("firsat_skoru"))
+        trade = _safe_float(snap.get("trade_skoru"))
+        long_score = _safe_float(snap.get("uzun_vade_skoru"))
+        radar = _safe_float(snap.get("radar_skoru"))
+        hakiki_alfa_pct = _safe_float((snap.get("hakiki_alfa") or {}).get("hakiki_alfa_pct"))
+    else:
+        # Non-BIST assets do not have proprietary snapshots. Keep the same
+        # decision schema, but derive a light signal from the live quote so
+        # every asset does not collapse into identical 50/50 defaults.
+        momentum = _clamp(quote_change_pct, -10.0, 10.0)
+        firsat = _clamp(50.0 + (momentum * 4.2), 18.0, 86.0)
+        trade = _clamp(50.0 + (momentum * 3.2), 20.0, 84.0)
+        long_score = _clamp(50.0 + (momentum * 1.4), 28.0, 76.0)
+        radar = _clamp(50.0 + (momentum * 3.8), 18.0, 86.0)
+        hakiki_alfa_pct = quote_change_pct
     target_profile, target_profile_label, target_mode, manual_target_return_pct = _resolve_target_plan(asset)
     system_target_return_pct = _recommended_target_return_pct(
         profile=target_profile,
@@ -360,7 +372,7 @@ def _build_position_card(
         horizon_days=_target_profile_horizon_days(target_profile),
         return_bias_pct=hakiki_alfa_pct,
         excess_bias_pct=hakiki_alfa_pct,
-        volatility_pct=abs(_safe_float((quote or {}).get("change_percent"))) * 2.2,
+        volatility_pct=abs(quote_change_pct) * 2.2,
     )
 
     holding_action, status, action_reason = _holding_action(
@@ -465,7 +477,7 @@ def _build_position_card(
         "uzun_vade_skoru": round(long_score, 2),
         "radar_skoru": round(radar, 2),
         "hakiki_alfa_pct": round(hakiki_alfa_pct, 2),
-        "quote_change_percent": _safe_float((quote or {}).get("change_percent")),
+        "quote_change_percent": quote_change_pct,
         "currency": (quote or {}).get("currency") or asset.get("currency") or "TRY",
         "captured_at": now.isoformat(),
     }
