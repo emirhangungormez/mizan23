@@ -1570,7 +1570,28 @@ class MarketFetcher:
         # Default: 4-8 char symbols are usually BIST stocks/certificates (THYAO, ALTIN.S1, etc.)
         return (len(s) >= 4 and len(s) <= 8) or ".S1" in s
 
-    def _normalize_symbol(self, symbol: str) -> str:
+    def _is_bist_with_hints(
+        self,
+        symbol: str,
+        market_hint: Optional[str] = None,
+        currency_hint: Optional[str] = None,
+    ) -> bool:
+        market = str(market_hint or "").strip().lower()
+        currency = str(currency_hint or "").strip().upper()
+        if market in {"us", "nyse", "nasdaq", "amex", "crypto", "commodities", "commodity", "funds", "fund", "fx", "forex"}:
+            return False
+        if market in {"bist", "tr", "turkey", "turkiye"}:
+            return True
+        if currency == "USD" and str(symbol or "").isalpha():
+            return False
+        return self._is_bist(symbol)
+
+    def _normalize_symbol(
+        self,
+        symbol: str,
+        market_hint: Optional[str] = None,
+        currency_hint: Optional[str] = None,
+    ) -> str:
         """Centralized symbol normalization for yfinance."""
         if symbol.startswith("^") or ".IS" in symbol or "=" in symbol:
             return symbol
@@ -1623,6 +1644,24 @@ class MarketFetcher:
         
         if symbol in explicit_map:
             return explicit_map[symbol]
+
+        market = str(market_hint or "").strip().lower()
+        currency = str(currency_hint or "").strip().upper()
+        if market in {"us", "nyse", "nasdaq", "amex"}:
+            return symbol
+        if market in {"crypto"}:
+            base = symbol.replace("TRY", "").replace("USDT", "").replace("USD", "")
+            return f"{base}-USD"
+        if market in {"fx", "forex"}:
+            if symbol.endswith("=X"):
+                return symbol
+            if len(symbol) == 6:
+                return f"{symbol}=X"
+            return f"{symbol}TRY=X"
+        if market in {"commodities", "commodity"} and symbol in explicit_map:
+            return explicit_map[symbol]
+        if currency == "USD" and symbol.isalpha() and len(symbol) <= 5:
+            return symbol
         
         # Type detection for common assets
         is_crypto = symbol.endswith("TRY") or symbol.endswith("USDT") or symbol.endswith("BTC")
@@ -1636,12 +1675,18 @@ class MarketFetcher:
         
         return f"{symbol}.IS" # Default to BIST
 
-    def get_index_data(self, symbol: str, period: str = "max") -> Optional[pd.DataFrame]:
+    def get_index_data(
+        self,
+        symbol: str,
+        period: str = "max",
+        market_hint: Optional[str] = None,
+        currency_hint: Optional[str] = None,
+    ) -> Optional[pd.DataFrame]:
         """The Central Persistence Layer for ALL assets (Stock, FX, Crypto, Index)"""
         try:
             # 1. Load Local
             local_df = self._load_from_disk(symbol)
-            yf_sym = self._normalize_symbol(symbol)
+            yf_sym = self._normalize_symbol(symbol, market_hint=market_hint, currency_hint=currency_hint)
 
             # 2. Update logic
             now = datetime.now()
@@ -1678,11 +1723,23 @@ class MarketFetcher:
         except: return None
         return None
 
-    def get_stock_data(self, symbol: str, period: str = "max") -> Optional[pd.DataFrame]:
+    def get_stock_data(
+        self,
+        symbol: str,
+        period: str = "max",
+        market_hint: Optional[str] = None,
+        currency_hint: Optional[str] = None,
+    ) -> Optional[pd.DataFrame]:
         """Alias for get_index_data to support legacy calls."""
-        return self.get_index_data(symbol, period)
+        return self.get_index_data(symbol, period, market_hint=market_hint, currency_hint=currency_hint)
 
-    def get_asset_details(self, symbol: str, period: str = "3mo") -> Dict[str, Any]:
+    def get_asset_details(
+        self,
+        symbol: str,
+        period: str = "3mo",
+        market_hint: Optional[str] = None,
+        currency_hint: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Ultra-fast coordinated fetch. Returns disk data instantly, updates in background."""
         now = datetime.now()
 
@@ -1791,7 +1848,7 @@ class MarketFetcher:
             return not ui_df.empty
 
         def enrich_from_bist_reference() -> None:
-            if not self._is_bist(symbol) or symbol in self.bist_indices:
+            if not self._is_bist_with_hints(symbol, market_hint=market_hint, currency_hint=currency_hint) or symbol in self.bist_indices:
                 return
 
             reference = load_bist_reference_stock(symbol)
@@ -1847,7 +1904,7 @@ class MarketFetcher:
         if has_data:
             if not has_usable_history:
                 logger.info(f"[MarketFetcher] Cached history unusable for {symbol}, forcing refresh")
-                self._update_asset_deep_sync(symbol, period, fetch_interval)
+                self._update_asset_deep_sync(symbol, period, fetch_interval, market_hint=market_hint, currency_hint=currency_hint)
                 history_df = self._load_from_disk(symbol)
                 result["info"] = self._load_metadata(symbol) or result["info"]
                 apply_history_payload(history_df)
@@ -1864,10 +1921,14 @@ class MarketFetcher:
                     should_update = True
 
             if should_update:
-                threading.Thread(target=self._update_asset_deep, args=(symbol, period, fetch_interval), daemon=True).start()
+                threading.Thread(
+                    target=self._update_asset_deep,
+                    args=(symbol, period, fetch_interval, market_hint, currency_hint),
+                    daemon=True,
+                ).start()
         else:
             logger.info(f"[MarketFetcher] Initial blocking fetch for {symbol}")
-            self._update_asset_deep_sync(symbol, period, fetch_interval)
+            self._update_asset_deep_sync(symbol, period, fetch_interval, market_hint=market_hint, currency_hint=currency_hint)
             history_df = self._load_from_disk(symbol)
             result["info"] = self._load_metadata(symbol) or {"name": symbol, "symbol": symbol}
             apply_history_payload(history_df)
@@ -1875,16 +1936,30 @@ class MarketFetcher:
 
         return result
 
-    def _update_asset_deep_sync(self, symbol: str, period: str, interval: str):
+    def _update_asset_deep_sync(
+        self,
+        symbol: str,
+        period: str,
+        interval: str,
+        market_hint: Optional[str] = None,
+        currency_hint: Optional[str] = None,
+    ):
         """Synchronous update helper."""
-        self._update_asset_history(symbol, period, interval)
-        self._update_asset_metadata(symbol)
+        self._update_asset_history(symbol, period, interval, market_hint=market_hint, currency_hint=currency_hint)
+        self._update_asset_metadata(symbol, market_hint=market_hint, currency_hint=currency_hint)
 
-    def _update_asset_history(self, symbol: str, period: str, interval: str):
+    def _update_asset_history(
+        self,
+        symbol: str,
+        period: str,
+        interval: str,
+        market_hint: Optional[str] = None,
+        currency_hint: Optional[str] = None,
+    ):
         """Sync history. BIST: borsapy first (0.3.1+), Foreign: yfinance."""
         try:
             new_df = None
-            is_bist = self._is_bist(symbol)
+            is_bist = self._is_bist_with_hints(symbol, market_hint=market_hint, currency_hint=currency_hint)
             
             # Try BORSAPY for BIST, Gold and FX (works with v0.3.1+)
             is_gold = "GOLD" in symbol.upper() or symbol.lower() in ["gram-altin", "ceyrek-altin", "yarim-altin", "tam-altin", "cumhuriyet-altin", "ata-altin", "ons-altin"]
@@ -1918,7 +1993,7 @@ class MarketFetcher:
 
             # Fallback / Foreign: Use yfinance
             if new_df is None or new_df.empty:
-                yf_sym = self._normalize_symbol(symbol)
+                yf_sym = self._normalize_symbol(symbol, market_hint=market_hint, currency_hint=currency_hint)
                 try:
                     new_df = yf.Ticker(yf_sym).history(period=period, interval=interval)
                     if new_df is not None and not new_df.empty:
@@ -1944,10 +2019,15 @@ class MarketFetcher:
         except Exception as e:
             logger.exception("[MarketFetcher] History update fail", extra={"symbol": symbol, "error": str(e)})
 
-    def _update_asset_metadata(self, symbol: str):
+    def _update_asset_metadata(
+        self,
+        symbol: str,
+        market_hint: Optional[str] = None,
+        currency_hint: Optional[str] = None,
+    ):
         """Metadata and financials refresh. borsapy for BIST (high accuracy), yfinance for others."""
         try:
-            is_bist = self._is_bist(symbol)
+            is_bist = self._is_bist_with_hints(symbol, market_hint=market_hint, currency_hint=currency_hint)
             clean_info = None
             financials = {}
 
@@ -2062,7 +2142,7 @@ class MarketFetcher:
 
             # 2. FOREIGN or BIST FALLBACK - Use yfinance
             if clean_info is None:
-                yf_sym = self._normalize_symbol(symbol)
+                yf_sym = self._normalize_symbol(symbol, market_hint=market_hint, currency_hint=currency_hint)
                 t = yf.Ticker(yf_sym)
                 info = t.info
                 if info:
@@ -2111,10 +2191,17 @@ class MarketFetcher:
         except Exception as e:
             logger.exception("[MarketFetcher] Metadata sync fail", extra={"symbol": symbol, "error": str(e)})
 
-    def _update_asset_deep(self, symbol: str, period: str = "3mo", interval: str = "1d"):
+    def _update_asset_deep(
+        self,
+        symbol: str,
+        period: str = "3mo",
+        interval: str = "1d",
+        market_hint: Optional[str] = None,
+        currency_hint: Optional[str] = None,
+    ):
         """Full update history + metadata."""
-        self._update_asset_history(symbol, period, interval)
-        self._update_asset_metadata(symbol)
+        self._update_asset_history(symbol, period, interval, market_hint=market_hint, currency_hint=currency_hint)
+        self._update_asset_metadata(symbol, market_hint=market_hint, currency_hint=currency_hint)
 
     def _calculate_metrics(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Calculate technical scores and probabilities from history."""
@@ -3809,7 +3896,11 @@ class MarketFetcher:
         return results
 
     @log_performance("quotes")
-    def get_batch_quotes(self, symbols: List[str]) -> List[Dict[str, Any]]:
+    def get_batch_quotes(
+        self,
+        symbols: List[str],
+        asset_context_by_symbol: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> List[Dict[str, Any]]:
         """
         Fetch current price and daily change for multiple symbols efficiently.
         Uses professional cache layer with TTL.
@@ -3888,10 +3979,13 @@ class MarketFetcher:
             
         def fetch_one(sym):
             try:
+                context = (asset_context_by_symbol or {}).get(str(sym).upper(), {})
+                market_hint = context.get("market")
+                currency_hint = context.get("currency")
                 # 1. Try BORSAPY for BIST, Gold and FX (with circuit breaker check)
                 is_gold = "GOLD" in sym.upper() or sym.lower() in ["gram-altin", "ceyrek-altin", "yarim-altin", "tam-altin", "cumhuriyet-altin", "ata-altin", "ons-altin"]
                 
-                if (self._is_bist(sym) or is_gold) and self._borsapy_circuit.can_execute():
+                if (self._is_bist_with_hints(sym, market_hint=market_hint, currency_hint=currency_hint) or is_gold) and self._borsapy_circuit.can_execute():
                     try:
                         if sym in self.bist_indices:
                             info = bp.Index(sym).info
@@ -3939,7 +4033,7 @@ class MarketFetcher:
                 # 2. Fallback / Foreign to yfinance (with circuit breaker)
                 if self._yfinance_circuit.can_execute():
                     try:
-                        yf_sym = self._normalize_symbol(sym)
+                        yf_sym = self._normalize_symbol(sym, market_hint=market_hint, currency_hint=currency_hint)
                         t = yf.Ticker(yf_sym)
                         h = t.history(period="2d")
                         

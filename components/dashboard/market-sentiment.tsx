@@ -14,6 +14,12 @@ import {
 import { MarketService } from "@/services/market.service";
 import { cn } from "@/lib/utils";
 
+type SignalSummaryResponse = {
+    summary?: {
+        recommendation?: string;
+    };
+};
+
 export function MarketSentiment() {
     const [sentiment, setSentiment] = useState<{
         score: number;
@@ -39,14 +45,14 @@ export function MarketSentiment() {
                     MarketService.getTASignals("^GSPC"),
                     MarketService.getTASignals("BTC-USD"),
                     MarketService.getDashboardData()
-                ]);
+                ]) as [SignalSummaryResponse | null, SignalSummaryResponse | null, SignalSummaryResponse | null, Awaited<ReturnType<typeof MarketService.getDashboardData>>];
 
                 const getQuoteChange = (sym: string) => {
                     const all = [...quotes.indices, ...quotes.us_markets, ...quotes.crypto];
                     return all.find(q => q.symbol === sym)?.change_percent || 0;
                 };
 
-                const mapScore = (rec: string) => {
+                const mapScore = (rec?: string) => {
                     if (rec === "STRONG_BUY") return 100;
                     if (rec === "BUY") return 75;
                     if (rec === "SELL") return 25;

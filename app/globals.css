@@ -44,6 +44,7 @@
 
 :root {
     --radius: 0.5rem;
+    --font-ui: "Segoe UI";
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
@@ -126,15 +127,15 @@
 
 @layer utilities {
     .page-shell {
-        @apply mx-auto w-full max-w-[1680px] px-5 py-4 lg:px-8 lg:py-6;
+        @apply mx-auto w-full max-w-[1680px] px-4 py-4 lg:px-8 lg:py-6;
     }
 
     .page-shell-wide {
-        @apply mx-auto w-full max-w-[1760px] px-5 py-4 lg:px-8 lg:py-6;
+        @apply mx-auto w-full max-w-[1760px] px-4 py-4 lg:px-8 lg:py-6;
     }
 
     .page-header-row {
-        @apply flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between;
+        @apply flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between;
     }
 
     .no-scrollbar::-webkit-scrollbar {

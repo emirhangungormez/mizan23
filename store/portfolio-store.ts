@@ -55,6 +55,7 @@ export interface GlobalMetrics {
 type TransactionPayload = {
   symbol: string;
   type: PortfolioTransactionType;
+  market?: string;
   quantity: number;
   price: number;
   date: string;
@@ -87,7 +88,7 @@ interface PortfolioState {
     symbol: string,
     updates: Partial<Pick<PortfolioAsset, "target_profile" | "target_mode" | "target_return_pct" | "notes" | "name">>
   ) => Promise<boolean>;
-  addAsset: (portfolioId: string, asset: { symbol: string; type?: string; quantity?: number; purchasePrice?: number; purchaseDate?: string; currency?: string; name?: string; note?: string }) => Promise<boolean>;
+  addAsset: (portfolioId: string, asset: { symbol: string; type?: string; market?: string; quantity?: number; purchasePrice?: number; purchaseDate?: string; currency?: string; name?: string; note?: string }) => Promise<boolean>;
   removeAsset: (portfolioId: string, symbol: string) => Promise<boolean>;
   sellAsset: (portfolioId: string, request: { symbol: string; quantity: number; sell_price: number; sell_date: string }) => Promise<boolean>;
   addTransaction: (portfolioId: string, transaction: TransactionPayload) => Promise<boolean>;
@@ -365,6 +366,7 @@ export const usePortfolioStore = create<PortfolioState>()(
         const success = await get().addTransaction(portfolioId, {
           symbol: asset.symbol,
           type: "buy",
+          market: asset.market,
           quantity: asset.quantity || 0,
           price: asset.purchasePrice || 0,
           date: asset.purchaseDate || new Date().toISOString(),
@@ -396,6 +398,7 @@ export const usePortfolioStore = create<PortfolioState>()(
         return get().addTransaction(portfolioId, {
           symbol: request.symbol,
           type: "sell",
+          market: currentAsset?.market,
           quantity: request.quantity,
           price: request.sell_price,
           date: request.sell_date,

@@ -177,7 +177,7 @@ function formatDividendTag(value: number | undefined, daysLeft?: number) {
   return `Temettu ${value.toFixed(2)}%${daysLabel}`;
 }
 
-function getDividendDaysLeft() {
+function getDividendDaysLeft(_item?: unknown) {
   return undefined;
 }
 
@@ -1163,6 +1163,7 @@ export default function MarketCategoryPage() {
     const success = await addAsset(selectedPortfolio.id, {
       symbol: item.symbol,
       type: getAssetTypeForCategory(category),
+      market: category,
       quantity: 1,
       purchasePrice: price,
       purchaseDate: new Date().toISOString(),
@@ -1343,7 +1344,7 @@ export default function MarketCategoryPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link href={`/market/${item.symbol}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
+                          <Link href={`/market/${item.symbol}?market=${category}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
                             {item.symbol}
                           </Link>
                           <FavoriteListPicker symbol={item.symbol} name={item.name} market="bist" size="icon-sm" className="-ml-1 size-7" />
@@ -1436,7 +1437,7 @@ export default function MarketCategoryPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link href={`/market/${item.symbol}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
+                          <Link href={`/market/${item.symbol}?market=${category}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
                             {item.symbol}
                           </Link>
                           <FavoriteListPicker symbol={item.symbol} name={item.name} market={category} size="icon-sm" className="-ml-1 size-7" />
@@ -1641,7 +1642,7 @@ export default function MarketCategoryPage() {
                         {(index + 1).toString().padStart(2, "0")}
                       </td>
                       <td className="px-4 py-3">
-                        <Link href={`/market/${item.symbol}`} className="flex flex-col gap-1 group/link">
+                        <Link href={`/market/${item.symbol}?market=${category}`} className="flex flex-col gap-1 group/link">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-[14px] text-foreground group-hover/link:text-primary transition-colors leading-none tracking-tight">
                               {item.symbol}
@@ -1808,7 +1809,7 @@ export default function MarketCategoryPage() {
                         {(index + 1).toString().padStart(2, "0")}
                       </td>
                       <td className="px-4 py-3">
-                        <Link href={`/market/${item.symbol}`} className="flex flex-col gap-1 group/link">
+                        <Link href={`/market/${item.symbol}?market=${category}`} className="flex flex-col gap-1 group/link">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-[14px] text-foreground group-hover/link:text-primary transition-colors leading-none tracking-tight">
                               {item.symbol}

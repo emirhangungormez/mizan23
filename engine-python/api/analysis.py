@@ -9,7 +9,7 @@ from typing import ClassVar
 from fastapi import APIRouter
 router: ClassVar[APIRouter] = APIRouter()
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
@@ -76,7 +76,11 @@ class ValuationResponse(BaseModel):
 
 
 @router.get("/{symbol}", response_model=AssetAnalysisResponse)
-def analyze_asset(symbol: str):
+def analyze_asset(
+    symbol: str,
+    market: Optional[str] = Query(None),
+    currency: Optional[str] = Query(None),
+):
     """
     Perform comprehensive analysis on a single asset.
     
@@ -87,7 +91,7 @@ def analyze_asset(symbol: str):
     - Risk classification
     - Human-readable interpretation
     """
-    data = market_fetcher.get_stock_data(symbol, period="1y")
+    data = market_fetcher.get_stock_data(symbol, period="1y", market_hint=market, currency_hint=currency)
     
     if data is None or data.empty:
         raise HTTPException(status_code=404, detail=f"No data available for '{symbol}'")

@@ -221,7 +221,16 @@ def  analyze_portfolio(portfolio_id: str):
         portfolio_assets = portfolio_data.get("assets", [])
         portfolio_transactions = portfolio_data.get("transactions", [])
         symbols = [str(asset.get("symbol") or "").upper() for asset in portfolio_assets if asset.get("symbol")]
-        quote_results = market_fetcher.get_batch_quotes(symbols) if symbols else []
+        asset_context_by_symbol = {
+            str(asset.get("symbol") or "").upper(): {
+                "market": asset.get("market"),
+                "currency": asset.get("currency"),
+                "asset_type": asset.get("asset_type") or asset.get("type"),
+            }
+            for asset in portfolio_assets
+            if asset.get("symbol")
+        }
+        quote_results = market_fetcher.get_batch_quotes(symbols, asset_context_by_symbol=asset_context_by_symbol) if symbols else []
         quotes_by_symbol = {
             str(item.get("symbol") or "").upper(): item
             for item in quote_results

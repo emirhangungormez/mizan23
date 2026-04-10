@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import { Reorder, useDragControls } from "framer-motion";
-import { FolderPlus, GripHorizontal, Layers, PencilLine, Trash2, TrendingDown, TrendingUp } from "lucide-react";
+import { FileText, FolderPlus, GripHorizontal, Layers, PencilLine, Trash2, TrendingDown, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { usePerformanceCalculator } from "@/hooks/use-performance-calculator";
 import { cn } from "@/lib/utils";
@@ -438,18 +438,33 @@ function PortfolioRow({
           <GripHorizontal className="size-4" />
         </button>
 
-        <Link
-          href={`/portfolio/${portfolio.id}`}
-          onClick={() => usePortfolioStore.getState().setActivePortfolio(portfolio.id)}
-          className="grid min-w-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.9fr)_minmax(220px,0.8fr)]"
-        >
+        <div className="grid min-w-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.9fr)_minmax(220px,0.8fr)]">
           {/* Left: Name + weight bar */}
           <div className="min-w-0">
             <div className="mb-2 flex items-center gap-2">
               <div className="size-2 rounded-full bg-emerald-500/80" />
               <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Aktif Sepet</span>
             </div>
-            <div className="truncate text-xl font-medium tracking-tight text-foreground">{portfolio.name}</div>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/portfolio/${portfolio.id}`}
+                onClick={() => usePortfolioStore.getState().setActivePortfolio(portfolio.id)}
+                className="truncate text-xl font-medium tracking-tight text-foreground transition-colors hover:text-primary"
+              >
+                {portfolio.name}
+              </Link>
+              <button
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onRename();
+                }}
+                title="Sepet ismini degistir"
+                className="shrink-0 rounded-md border bg-background p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <PencilLine className="size-3.5" />
+              </button>
+            </div>
             <div className="mt-4 flex flex-col gap-2.5">
               {assetsWithWeights.length > 0 ? (
                 <div className="flex flex-col gap-2 w-full pr-4">
@@ -547,7 +562,7 @@ function PortfolioRow({
               </div>
             </div>
           </div>
-        </Link>
+        </div>
 
         <div
           className="relative isolate z-50 flex shrink-0 flex-col justify-center gap-2"
@@ -559,17 +574,11 @@ function PortfolioRow({
               <PencilLine className="size-4" />
             </Link>
           </Button>
-          <button
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onRename();
-            }}
-            title="Sepet ismini degistir"
-            className="rounded-lg border bg-background p-2 text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <PencilLine className="size-4" />
-          </button>
+          <Button asChild size="icon-sm" variant="outline" className="bg-background" title="Sepet raporunu ac">
+            <Link href={`/portfolio/${portfolio.id}?panel=report#report-panel`} onClick={() => usePortfolioStore.getState().setActivePortfolio(portfolio.id)}>
+              <FileText className="size-4" />
+            </Link>
+          </Button>
           <button
             onClick={(event) => {
               event.preventDefault();

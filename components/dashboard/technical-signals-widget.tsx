@@ -25,6 +25,12 @@ interface Signal {
     change: number;
 }
 
+type SignalSummaryResponse = {
+    summary?: {
+        recommendation?: string;
+    };
+};
+
 export function TechnicalSignalsWidget() {
     const [signals, setSignals] = useState<Signal[]>([]);
     const [loading, setLoading] = useState(true);
@@ -36,7 +42,7 @@ export function TechnicalSignalsWidget() {
                 const symbols = ["THYAO", "EREGL", "KCHOL", "SISE", "AKBNK", "GARAN", "ISCTR", "YKBNK", "SAHOL", "ASELS"];
                 const results = await Promise.all(
                     symbols.map(async (sym) => {
-                        const s = await MarketService.getTASignals(sym);
+                        const s = await MarketService.getTASignals(sym) as SignalSummaryResponse | null;
                         const quote = await MarketService.getQuote(sym);
                         return {
                             symbol: sym,

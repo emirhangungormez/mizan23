@@ -13,7 +13,7 @@ function getApiBaseUrl() {
 export interface AssetSearchResult {
     symbol: string;
     name: string;
-    type: 'stock' | 'forex' | 'crypto' | 'commodity' | 'fund';
+    type: 'stock' | 'forex' | 'crypto' | 'commodity' | 'fund' | 'cash';
     market: string;
     sector?: string;
     category?: string;

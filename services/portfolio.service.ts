@@ -19,6 +19,7 @@ export type PortfolioTransactionType = 'buy' | 'sell';
 export interface PortfolioAsset {
     symbol: string;
     type: PortfolioAssetType;
+    market?: string;
     quantity: number;
     avg_price: number;
     avgPrice?: number; // Map from avg_price
@@ -37,6 +38,7 @@ export interface Transaction {
     id: string;
     symbol: string;
     type?: PortfolioTransactionType;
+    market?: string;
     asset_type?: PortfolioAssetType;
     asset_name?: string;
     quantity: number;

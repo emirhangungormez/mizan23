@@ -92,7 +92,7 @@ export function TransactionModal({
           symbol: transaction.symbol,
           name: transaction.asset_name || transaction.symbol,
           type: transaction.asset_type || fallbackAsset?.type || "stock",
-          market: "PORTFOLIO",
+          market: transaction.market || fallbackAsset?.market || "PORTFOLIO",
           currency: transaction.currency || fallbackAsset?.currency || "TRY",
           price: transaction.price ?? transaction.sell_price ?? transaction.buy_price,
         }
@@ -101,7 +101,7 @@ export function TransactionModal({
             symbol: fallbackAsset.symbol,
             name: fallbackAsset.name || fallbackAsset.symbol,
             type: fallbackAsset.type,
-            market: "PORTFOLIO",
+            market: fallbackAsset.market || "PORTFOLIO",
             currency: fallbackAsset.currency || "TRY",
             price: fallbackAsset.avg_price || fallbackAsset.avgPrice,
           }
@@ -221,6 +221,7 @@ export function TransactionModal({
       quantity: Number(quantity),
       price: Number(price),
       date: `${date}T12:00:00Z`,
+      market: selectedAsset.market || holdingsMap[selectedAsset.symbol]?.market,
       currency: selectedAsset.currency || holdingsMap[selectedAsset.symbol]?.currency || "TRY",
       assetType: selectedAsset.type,
       assetName: selectedAsset.name,

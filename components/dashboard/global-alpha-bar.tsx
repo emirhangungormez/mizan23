@@ -125,19 +125,23 @@ export function GlobalAlphaBar({
   const visibleItems = showResolvedData ? items : [];
   const visibleTotal = showResolvedData ? total : 0;
   const visibleGaRatio = showResolvedData ? gaRatio : null;
+  const normalizedVisibleItems = React.useMemo(
+    () => visibleItems.map((item) => ({ ...item, share: item.share ?? 0 })),
+    [visibleItems],
+  );
 
   return (
     <section className="shrink-0 rounded-xl border bg-card/95 p-3">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1 overflow-hidden rounded-lg border bg-muted/30">
           <div className="flex h-7 w-full">
-            {visibleItems.length > 0 ? (
-              visibleItems.map((item) => (
+            {normalizedVisibleItems.length > 0 ? (
+              normalizedVisibleItems.map((item) => (
                 <div
                   key={item.key}
                   className="h-full transition-all"
                   style={{
-                    width: `${Math.max(item.share, 1.5)}%`,
+                    width: `${Math.max(item.share ?? 0, 1.5)}%`,
                     backgroundColor: item.color,
                   }}
                   title={`${item.label}: ${item.share.toFixed(2)}% • ${formatTrillionUsd(item.estimated_value_trillion_usd)}`}
@@ -165,14 +169,14 @@ export function GlobalAlphaBar({
           <div className="shrink-0 font-medium text-foreground">
             {formatTrillionUsd(visibleTotal)}
           </div>
-          {visibleItems.map((item) => (
+          {normalizedVisibleItems.map((item) => (
             <div key={item.key} className="flex items-center gap-2">
               <span
                 className="size-2.5 shrink-0 rounded-full"
                 style={{ backgroundColor: item.color }}
               />
               <span className="font-medium text-foreground">{item.label}</span>
-              <span>%{item.share.toFixed(2)}</span>
+              <span>%{(item.share ?? 0).toFixed(2)}</span>
               <span>{formatTrillionUsd(item.estimated_value_trillion_usd)}</span>
             </div>
           ))}

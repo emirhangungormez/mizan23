@@ -131,12 +131,14 @@ def _append_assets(
             "sector": _repair_text(str(row.get("sector") or "")) or None,
             "category": _repair_text(str(row.get("category") or "")) or None,
             "unit": _repair_text(str(row.get("unit") or "")) or None,
+            "aliases": row.get("aliases") or [],
         }
         _append_unique_asset(target, asset)
 
 
 def _seed_forex_assets() -> List[Dict[str, Any]]:
     return [
+        {"symbol": "TRY", "name": "TÃ¼rk LirasÄ±", "type": "cash", "market": "NAKIT", "base": "TRY", "quote": "TRY", "aliases": ["TL", "TURK LIRASI", "TURKISH LIRA"]},
         {"symbol": "USD", "name": "ABD Doları", "type": "forex", "market": "FX", "base": "USD", "quote": "TRY"},
         {"symbol": "EUR", "name": "Euro", "type": "forex", "market": "FX", "base": "EUR", "quote": "TRY"},
         {"symbol": "GBP", "name": "İngiliz Sterlini", "type": "forex", "market": "FX", "base": "GBP", "quote": "TRY"},
@@ -263,6 +265,7 @@ async def initialize_asset_cache(force: bool = False):
             asset["name_norm"] = normalize_tr(str(asset.get("name") or ""))
             asset["market_norm"] = normalize_tr(str(asset.get("market") or ""))
             asset["type_norm"] = normalize_tr(str(asset.get("type") or ""))
+            asset["alias_norms"] = [normalize_tr(str(alias or "")) for alias in asset.get("aliases") or [] if alias]
 
     _CACHE_INITIALIZED = True
     logger.info("[AssetSearch] Asset cache initialization finished")
@@ -313,13 +316,14 @@ def search_assets(query: str, asset_type: str = "all", limit: int = 20) -> List[
             name_norm = str(asset.get("name_norm") or "")
             market_norm = str(asset.get("market_norm") or "")
             type_norm = str(asset.get("type_norm") or "")
-            combined_norm = f"{sym_norm}{name_norm}{market_norm}{type_norm}"
+            alias_norms = [str(value or "") for value in asset.get("alias_norms") or []]
+            combined_norm = f"{sym_norm}{name_norm}{market_norm}{type_norm}{''.join(alias_norms)}"
 
-            if norm_query == sym_norm or norm_query == name_norm:
+            if norm_query == sym_norm or norm_query == name_norm or norm_query in alias_norms:
                 score = 1000
-            elif sym_norm.startswith(norm_query) or name_norm.startswith(norm_query):
+            elif sym_norm.startswith(norm_query) or name_norm.startswith(norm_query) or any(alias.startswith(norm_query) for alias in alias_norms):
                 score = 500
-            elif norm_query in sym_norm or norm_query in name_norm:
+            elif norm_query in sym_norm or norm_query in name_norm or any(norm_query in alias for alias in alias_norms):
                 score = 250
             elif norm_query in market_norm or norm_query in type_norm:
                 score = 200
@@ -372,6 +376,10 @@ def _enrich_with_quotes(results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             enriched_asset["price"] = quote.get("last")
             enriched_asset["change"] = quote.get("change_percent")
             enriched_asset["currency"] = quote.get("currency")
+        elif symbol == "TRY":
+            enriched_asset["price"] = 1.0
+            enriched_asset["change"] = 0.0
+            enriched_asset["currency"] = "TRY"
         else:
             market = str(enriched_asset.get("market") or "").upper()
             if market in {"BIST", "FX", "DÖVIZ", "DOVIZ"}:

@@ -920,10 +920,12 @@ def get_company_list():
 @router.get("/asset/{symbol}")
 def get_asset_details(
     symbol: str,
-    period: str = Query("3mo", pattern="^(1g|5g|1ay|3ay|6ay|1y|2y|5y|max|1d|5d|1mo|3mo|6mo|1y|2y|5y|max)$")
+    period: str = Query("3mo", pattern="^(1g|5g|1ay|3ay|6ay|1y|2y|5y|max|1d|5d|1mo|3mo|6mo|1y|2y|5y|max)$"),
+    market: str | None = Query(None),
+    currency: str | None = Query(None),
 ):
     """Get comprehensive details for any investment asset (Stock, FX, Crypto, etc.)."""
-    data = market_fetcher.get_asset_details(symbol.upper(), period=period)
+    data = market_fetcher.get_asset_details(symbol.upper(), period=period, market_hint=market, currency_hint=currency)
     # The MarketFetcher already sanitizes the data, but we use safe_dict for extra safety
     return safe_dict(data)
 

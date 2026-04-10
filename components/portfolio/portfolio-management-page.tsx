@@ -306,7 +306,7 @@ export function PortfolioManagementPage({ portfolioId }: { portfolioId: string }
   }, [convertToDisplay, totalValueTRY, weightedPositions]);
 
   const chartData = React.useMemo(() => {
-    const curve = analysis?.portfolio_id === portfolio?.id ? analysis.equity_curve : [];
+    const curve = analysis && analysis.portfolio_id === portfolio?.id ? analysis.equity_curve : [];
     return curve.map((point) => ({
       date: new Date(point.date).toLocaleDateString("tr-TR", { day: "2-digit", month: "short" }),
       value: convertToDisplay(point.value),
@@ -618,7 +618,7 @@ export function PortfolioManagementPage({ portfolioId }: { portfolioId: string }
                   const tone = (item.score || 0) >= 0.7 ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" : (item.score || 0) <= 0.35 ? "bg-rose-500/10 text-rose-700 border-rose-500/20" : "bg-slate-500/10 text-slate-700 border-slate-500/20";
                   const decision = holdingDecisionMap[item.symbol];
                   return (
-                    <tr key={item.symbol} className="cursor-pointer border-t border-border/60 transition-colors hover:bg-muted/20" onClick={() => router.push(`/market/${item.symbol}`)}>
+                    <tr key={item.symbol} className="cursor-pointer border-t border-border/60 transition-colors hover:bg-muted/20" onClick={() => router.push(`/market/${item.symbol}${item.market ? `?market=${encodeURIComponent(String(item.market))}` : ""}`)}>
                       <td className="px-4 py-4"><div className="font-medium">{item.name}</div><div className="text-xs text-muted-foreground">{item.symbol}</div></td>
                       <td className="px-4 py-4 text-right font-mono">{item.quantity.toLocaleString("tr-TR")}</td>
                       <td className="px-4 py-4 text-right font-mono">{fmtCurrency(item.avgCostDisplay, locale, currencySymbol)}</td>

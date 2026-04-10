@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
     fetchAssetDetails,
     fetchBistStockSnapshot,
@@ -27,9 +27,11 @@ import { CompanyNavbar, COMPANY_NAV_ITEMS } from "@/components/company/company-n
 import { CandlestickChart } from "@/components/charts/candlestick-chart";
 import { FastInfoCard } from "@/components/company/fast-info-card";
 import { SupertrendIndicator } from "@/components/company/supertrend-indicator";
-import { TradingViewAdvancedChart } from "@/components/charts/tradingview-advanced-chart";
 import { FavoriteListPicker } from "@/components/favorites/favorite-list-picker";
 import { AnalysisService, type AssetAnalysis } from "@/services/analysis.service";
+import type { DashboardData } from "@/services/market.service";
+
+type AssetMarket = "bist" | "us" | "crypto" | "commodities" | "funds" | "fx";
 
 // Period configuration
 const PERIODS = [
@@ -42,6 +44,24 @@ const PERIODS = [
     { label: "5 Yıl", val: "5y", key: "fiveYear" },
     { label: "Tümü", val: "max", key: "max" },
 ];
+
+function resolveChartRequest(period: string) {
+    switch (period) {
+        case "1d":
+            return { interval: "5m", label: "5 dakikalik akis" };
+        case "5d":
+            return { interval: "30m", label: "30 dakikalik akis" };
+        case "1mo":
+        case "3mo":
+        case "6mo":
+            return { interval: "1h", label: "Saatlik akis" };
+        case "1y":
+        case "5y":
+        case "max":
+        default:
+            return { interval: "1d", label: "Gunluk akis" };
+    }
+}
 
 // Stats Component
 function StatItem({ label, value, color }: { label: string; value: string; color?: string }) {
@@ -222,22 +242,46 @@ function normalizeScore(value?: number | null) {
     return value <= 1 ? value * 100 : value;
 }
 
+function isIndexSymbol(symbol: string) {
+    return symbol.startsWith("XU") || symbol.startsWith("XB") || symbol.startsWith("^") || ["XUTUM", "XUSIN", "XHOLD", "XUTEK", "XGIDA", "XTRZM", "XULAS"].includes(symbol);
+}
+
+function normalizeMarketHint(value?: string | null): AssetMarket | null {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (normalized === "bist") return "bist";
+    if (normalized === "us" || normalized === "nasdaq" || normalized === "nyse" || normalized === "amex") return "us";
+    if (normalized === "crypto") return "crypto";
+    if (normalized === "commodities" || normalized === "commodity") return "commodities";
+    if (normalized === "funds" || normalized === "fund") return "funds";
+    if (normalized === "fx" || normalized === "forex") return "fx";
+    return null;
+}
+
+function resolveMarketFromDashboard(symbol: string, dashboardData: DashboardData | null): AssetMarket | null {
+    if (!dashboardData) return null;
+    if (dashboardData.crypto?.some((item) => item.symbol === symbol)) return "crypto";
+    if (dashboardData.commodities?.some((item) => item.symbol === symbol)) return "commodities";
+    if (dashboardData.funds?.some((item) => item.symbol === symbol)) return "funds";
+    if (dashboardData.fx?.some((item) => item.symbol === symbol)) return "fx";
+    if (dashboardData.us_markets?.some((item) => item.symbol === symbol)) return "us";
+    if (dashboardData.stocks?.some((item) => item.symbol === symbol)) return "bist";
+    return null;
+}
+
 // Helper to determine asset type
-function getAssetType(symbol: string): "STOCK" | "INDEX" | "FOREX" | "CRYPTO" | "FUND" {
-    // Indices (BIST and Global)
-    if (symbol.startsWith("XU") || symbol.startsWith("XB") || symbol.startsWith("^") || ["XUTUM", "XUSIN", "XHOLD", "XUTEK", "XGIDA", "XTRZM", "XULAS"].includes(symbol)) {
+function getAssetType(symbol: string, market?: AssetMarket | null): "STOCK" | "INDEX" | "FOREX" | "CRYPTO" | "FUND" {
+    if (isIndexSymbol(symbol)) {
         return "INDEX";
     }
-    // Crypto
+    if (market === "crypto") return "CRYPTO";
+    if (market === "fx") return "FOREX";
+    if (market === "funds") return "FUND";
     if (symbol.endsWith("-USD") || symbol.includes("BTC") || symbol.includes("ETH")) {
         return "CRYPTO";
     }
-    // Forex / Commodities (Gold/Silver often resemble pairs or futures)
     if (symbol.includes("USD") || symbol.includes("EUR") || symbol === "GC=F" || symbol === "SI=F" || symbol.includes("=X")) {
         return "FOREX";
     }
-    // Funds (Placeholder logic, TEFAS codes usually 3 chars and not BIST logic might be tricky, assuming explicit for now if needed later)
-    // For now default to STOCK for everything else
     return "STOCK";
 }
 
@@ -251,14 +295,33 @@ function getFavoriteMarket(assetType: "STOCK" | "INDEX" | "FOREX" | "CRYPTO" | "
 export default function AssetDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const symbol = params.symbol as string;
-    const assetType = getAssetType(symbol);
-    const favoriteMarket = getFavoriteMarket(assetType);
-    const assetCurrency = symbol.endsWith("-USD") || (symbol.includes(".") && !symbol.endsWith(".IS")) ? "USD" : "TRY";
-    const currencySymbol = assetCurrency === "USD" ? "$" : "₺";
-    const locale = assetCurrency === "USD" ? "en-US" : "tr-TR";
-
+    const dashboardData = useDashboardStore((state) => state.dashboardData);
+    const fetchDashboardData = useDashboardStore((state) => state.fetchDashboardData);
     const { refreshTrigger } = useDashboardStore();
+    const explicitMarket = React.useMemo(() => normalizeMarketHint(searchParams.get("market")), [searchParams]);
+    const ambiguousBareTicker = React.useMemo(
+        () => /^[A-Z]{1,6}$/.test(symbol) && !isIndexSymbol(symbol) && !symbol.includes("-") && !symbol.includes("=") && !symbol.endsWith(".IS"),
+        [symbol]
+    );
+    const resolvedMarket = React.useMemo(() => {
+        if (explicitMarket) return explicitMarket;
+        const fromDashboard = resolveMarketFromDashboard(symbol, dashboardData);
+        if (fromDashboard) return fromDashboard;
+        if (symbol.endsWith("-USD") || symbol.includes("USDT")) return "crypto";
+        if (symbol.includes("=X")) return "fx";
+        if (!dashboardData && ambiguousBareTicker) return null;
+        return "bist";
+    }, [ambiguousBareTicker, dashboardData, explicitMarket, symbol]);
+    const assetType = React.useMemo(() => getAssetType(symbol, resolvedMarket), [resolvedMarket, symbol]);
+    const favoriteMarket = (resolvedMarket || getFavoriteMarket(assetType)) as ReturnType<typeof getFavoriteMarket>;
+    const resolvedCurrency = resolvedMarket === "us" || resolvedMarket === "crypto" || resolvedMarket === "commodities" ? "USD" : "TRY";
+    const isBistStock = assetType === "STOCK" && resolvedMarket === "bist";
+    const assetCurrency = resolvedCurrency;
+    const currencySymbol = assetCurrency === "USD" ? "$" : "₺";
+    const locale = resolvedCurrency === "USD" ? "en-US" : "tr-TR";
+
     const [data, setData] = React.useState<AssetDetailData | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
@@ -269,8 +332,14 @@ export default function AssetDetailPage() {
     const [proprietarySnapshot, setProprietarySnapshot] = React.useState<BistProprietarySnapshot | null>(null);
     const [technicalAnalysis, setTechnicalAnalysis] = React.useState<AssetAnalysis | null>(null);
     const [activeSection, setActiveSection] = React.useState("overview");
-    const [chartSurface, setChartSurface] = React.useState<"tradingview" | "native">("tradingview");
     const [chartType, setChartType] = React.useState<"line" | "candle" | "ha">("line");
+    const chartRequest = React.useMemo(() => resolveChartRequest(period), [period]);
+
+    React.useEffect(() => {
+        if (!dashboardData) {
+            void fetchDashboardData();
+        }
+    }, [dashboardData, fetchDashboardData]);
 
     // Fetch index constituents
     React.useEffect(() => {
@@ -358,6 +427,20 @@ export default function AssetDetailPage() {
         (typeof info?.longName === "string" && info.longName)
         || (typeof info?.name === "string" && info.name)
         || symbol;
+    const selectedPeriodKey = React.useMemo(
+        () => PERIODS.find((item) => item.val === period)?.key || "daily",
+        [period]
+    );
+    const selectedPeriodReturn = React.useMemo(() => {
+        const presetReturn = periodReturns[selectedPeriodKey];
+        if (presetReturn !== undefined && presetReturn !== null) {
+            return presetReturn;
+        }
+        if (history && Array.isArray(history) && history.length > 1) {
+            return calculateReturn(history);
+        }
+        return changePercent;
+    }, [calculateReturn, changePercent, history, periodReturns, selectedPeriodKey]);
 
     const stats = React.useMemo(() => {
         if (!history || !Array.isArray(history) || history.length === 0) {
@@ -390,20 +473,21 @@ export default function AssetDetailPage() {
     }, [history, info]);
 
     // BIST Limits (Theoretical +/- 10%)
-    const ceilingPrice = assetType === "STOCK" && previousClose ? previousClose * 1.10 : null;
-    const floorPrice = assetType === "STOCK" && previousClose ? previousClose * 0.90 : null;
+    const ceilingPrice = isBistStock && previousClose ? previousClose * 1.10 : null;
+    const floorPrice = isBistStock && previousClose ? previousClose * 0.90 : null;
 
     const fetchData = React.useCallback(async (targetPeriod?: string) => {
+        if (!resolvedMarket) return;
         const p = targetPeriod || period;
-        const cacheKey = `asset_detail_${symbol}_${p}`;
+        const cacheKey = `asset_detail_${resolvedMarket}_${symbol}_${p}`;
         setIsLoading(true);
         setError(null);
 
         try {
             const [detailsResult, bistSnapshotResult, analysisResult] = await Promise.allSettled([
-                fetchAssetDetails(symbol, p) as Promise<AssetDetailData>,
-                assetType === "STOCK" ? fetchBistStockSnapshot(symbol) : Promise.resolve(null),
-                AnalysisService.analyzeAsset(symbol),
+                fetchAssetDetails(symbol, p, { market: resolvedMarket, currency: resolvedCurrency }) as Promise<AssetDetailData>,
+                isBistStock ? fetchBistStockSnapshot(symbol) : Promise.resolve(null),
+                AnalysisService.analyzeAsset(symbol, { market: resolvedMarket, currency: resolvedCurrency }),
             ]);
             if (detailsResult.status !== "fulfilled") {
                 throw detailsResult.reason;
@@ -472,20 +556,23 @@ export default function AssetDetailPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [assetType, period, symbol]);
+    }, [isBistStock, period, resolvedCurrency, resolvedMarket, symbol]);
 
     // Fetch Data on mount or refresh
     React.useEffect(() => {
+        if (!resolvedMarket) return;
         fetchData();
-    }, [symbol, refreshTrigger, fetchData]);
+    }, [fetchData, refreshTrigger, resolvedMarket, symbol]);
 
     const handlePeriodChange = (newPeriod: string) => {
         setPeriod(newPeriod);
-        fetchData(newPeriod);
+        if (resolvedMarket) {
+            fetchData(newPeriod);
+        }
     };
 
     // Loading skeleton
-    if (isLoading && !data) {
+    if ((isLoading && !data) || (!resolvedMarket && !data)) {
         return (
             <div className="w-full h-full p-4 space-y-4">
                 <Skeleton className="h-10 w-full rounded-lg" />
@@ -527,14 +614,14 @@ export default function AssetDetailPage() {
         <div className="w-full h-full flex flex-col overflow-hidden bg-background">
             {/* COMPANY HEADER (Fintables Style) */}
             <div className="border-b bg-card shrink-0">
-                <div className="mx-auto flex w-full max-w-[1760px] flex-col gap-4 px-4 py-4 lg:px-6 xl:flex-row xl:items-center xl:justify-between">
+                <div className="mx-auto flex w-full max-w-[1760px] flex-col gap-3 px-4 py-3 lg:px-6 xl:flex-row xl:items-center xl:justify-between">
                     <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                        <div className="size-12 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded bg-primary/10 text-base font-bold text-primary sm:size-12 sm:text-lg">
                             {symbol.substring(0, 2)}
                         </div>
                         <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{symbol}</h1>
+                                <h1 className="text-lg font-bold tracking-tight sm:text-2xl">{symbol}</h1>
                                 <FavoriteListPicker
                                     symbol={symbol}
                                     name={assetDisplayName}
@@ -542,12 +629,12 @@ export default function AssetDetailPage() {
                                     size="icon"
                                 />
                             </div>
-                            <p className="truncate text-sm text-muted-foreground font-medium">{assetDisplayName}</p>
+                            <p className="truncate text-xs font-medium text-muted-foreground sm:text-sm">{assetDisplayName}</p>
                         </div>
                     </div>
 
                     <div className="w-full xl:w-auto">
-                        <div className="flex flex-wrap items-end justify-start gap-3 text-left xl:justify-end xl:text-right">
+                        <div className="flex flex-wrap items-end justify-start gap-x-3 gap-y-1 text-left xl:justify-end xl:text-right">
                             <div className="flex flex-col items-start xl:mr-4 xl:items-end">
                                 <span className="text-[10px] text-muted-foreground uppercase">Taban / Tavan</span>
                                 <div className="flex gap-2 font-mono text-xs">
@@ -557,18 +644,18 @@ export default function AssetDetailPage() {
                                 </div>
                             </div>
 
-                            <span className="text-sm text-muted-foreground font-medium xl:ml-2">G</span>
-                            <span className="text-2xl font-bold font-mono sm:text-3xl">
+                            <span className="text-xs font-medium text-muted-foreground xl:ml-2 sm:text-sm">G</span>
+                            <span className="text-xl font-bold font-mono sm:text-3xl">
                                 {currentPrice.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                             <span className={cn(
-                                "text-base font-bold font-mono sm:text-lg",
+                                "text-sm font-bold font-mono sm:text-lg",
                                 (changePercent >= 0) ? "text-emerald-500" : "text-red-500"
                             )}>
                                 %{Math.abs(changePercent).toFixed(2)}
                             </span>
                         </div>
-                        <div className="mt-1 text-[10px] text-muted-foreground font-mono">
+                        <div className="mt-1 hidden text-[10px] font-mono text-muted-foreground sm:block">
                             {new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}, {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                     </div>
@@ -628,7 +715,7 @@ export default function AssetDetailPage() {
                             </div>
 
                             <div className="space-y-6 p-4 lg:p-6">
-                                {activeSection === "overview" && assetType === "STOCK" && (
+                                {activeSection === "overview" && isBistStock && (
                                     <div className="grid grid-cols-1 gap-4 xl:grid-cols-4 md:grid-cols-2">
                                         <div className="rounded-2xl border bg-card p-5 xl:col-span-2">
                                             <div className="flex items-start justify-between gap-4">
@@ -675,7 +762,7 @@ export default function AssetDetailPage() {
                                     </div>
                                 )}
 
-                                {activeSection === "score" && assetType === "STOCK" && proprietarySnapshot && (
+                                {activeSection === "score" && isBistStock && proprietarySnapshot && (
                                     <div className="space-y-4">
                                         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                                             <div>
@@ -932,28 +1019,9 @@ export default function AssetDetailPage() {
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-3">
                                                 <h2 className="text-lg font-bold">{symbol} Grafik Merkezi</h2>
-                                                <div className="flex items-center gap-1 rounded-md bg-muted p-1">
-                                                    <Button
-                                                        variant={chartSurface === "tradingview" ? "secondary" : "ghost"}
-                                                        size="xs"
-                                                        className="h-7 text-[10px]"
-                                                        onClick={() => setChartSurface("tradingview")}
-                                                    >
-                                                        TradingView
-                                                    </Button>
-                                                    <Button
-                                                        variant={chartSurface === "native" ? "secondary" : "ghost"}
-                                                        size="xs"
-                                                        className="h-7 text-[10px]"
-                                                        onClick={() => setChartSurface("native")}
-                                                    >
-                                                        Yerel Grafik
-                                                    </Button>
-                                                </div>
                                             </div>
                                             <p className="max-w-2xl text-sm text-muted-foreground">
-                                                TradingView görünümü profesyonel takip için kullanılabilir. Yerel grafik görünümü ise
-                                                hızlı ve uygulama içi okumaya uygun şekilde kalır.
+                                                Grafikler artik yalnizca uygulama ici veriyle cizilir ve secilen doneme gore {chartRequest.label.toLowerCase()} kullanir.
                                             </p>
                                         </div>
 
@@ -966,8 +1034,8 @@ export default function AssetDetailPage() {
                                             </div>
                                             <div className="rounded-xl border bg-background px-3 py-2.5">
                                                 <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Dönem getirisi</div>
-                                                <div className={cn("mt-1 font-mono font-semibold", changePercent >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                                                    {changePercent >= 0 ? "+" : ""}%{changePercent.toFixed(2)}
+                                                <div className={cn("mt-1 font-mono font-semibold", selectedPeriodReturn >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                                                    {selectedPeriodReturn >= 0 ? "+" : ""}%{selectedPeriodReturn.toFixed(2)}
                                                 </div>
                                             </div>
                                             <div className="rounded-xl border bg-background px-3 py-2.5">
@@ -987,8 +1055,8 @@ export default function AssetDetailPage() {
                                 </div>
                                 <div className="flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
                                     <div className="flex items-center gap-3">
-                                        <h2 className="text-lg font-bold">{chartSurface === "tradingview" ? `${symbol} TradingView` : `${symbol} Yerel Grafik`}</h2>
-                                        <div className={cn("no-scrollbar flex items-center gap-1 overflow-x-auto rounded-md bg-muted p-1", chartSurface !== "native" && "hidden")}>
+                                        <h2 className="text-lg font-bold">{symbol} Yerel Grafik</h2>
+                                        <div className="no-scrollbar flex items-center gap-1 overflow-x-auto rounded-md bg-muted p-1">
                                             <Button
                                                 variant={chartType === "line" ? "secondary" : "ghost"}
                                                 size="xs"
@@ -1028,13 +1096,6 @@ export default function AssetDetailPage() {
                                         <div className="h-[460px] flex items-center justify-center">
                                             <RefreshCw className="size-8 animate-spin text-primary/30" />
                                         </div>
-                                    ) : chartSurface === "tradingview" ? (
-                                        <TradingViewAdvancedChart
-                                            symbol={symbol}
-                                            assetType={assetType}
-                                            period={period}
-                                            height={460}
-                                        />
                                     ) : chartType === "line" ? (
                                         <PriceChart
                                             data={history || []}
@@ -1048,6 +1109,8 @@ export default function AssetDetailPage() {
                                             data={history || []}
                                             height={460}
                                             symbol={symbol}
+                                            period={period}
+                                            interval={chartRequest.interval}
                                             useHeikinAshi={chartType === "ha"}
                                         />
                                     )}
@@ -1109,7 +1172,7 @@ export default function AssetDetailPage() {
                                 )}
 
                                 {/* Fast Info & Supertrend - ONLY FOR STOCKS */}
-                                {assetType === "STOCK" && activeSection === "overview" && (
+                                {isBistStock && activeSection === "overview" && (
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         <FastInfoCard symbol={symbol} />
                                         <SupertrendIndicator symbol={symbol} />
@@ -1117,7 +1180,7 @@ export default function AssetDetailPage() {
                                 )}
 
                                 {/* Consolidated Company Report (Financials, Score, Info) - ONLY FOR STOCKS */}
-                                {assetType === "STOCK" && activeSection === "financials" && (
+                                {isBistStock && activeSection === "financials" && (
                                     <div className="border-t pt-8">
                                         <CompanyFinancialsView
                                             symbol={symbol}

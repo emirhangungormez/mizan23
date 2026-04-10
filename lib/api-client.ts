@@ -282,8 +282,15 @@ export interface AssetDetails {
     [key: string]: unknown;
 }
 
-export async function fetchAssetDetails(symbol: string, period: string = "3mo"): Promise<AssetDetails> {
-    return fetchFromEngine<AssetDetails>(`/market/asset/${symbol}?period=${period}`, {
+export async function fetchAssetDetails(
+    symbol: string,
+    period: string = "3mo",
+    options?: { market?: string; currency?: string }
+): Promise<AssetDetails> {
+    const params = new URLSearchParams({ period });
+    if (options?.market) params.set("market", options.market);
+    if (options?.currency) params.set("currency", options.currency);
+    return fetchFromEngine<AssetDetails>(`/market/asset/${symbol}?${params.toString()}`, {
         timeout: 60000,
         cacheTime: 60000,
     });
@@ -628,8 +635,15 @@ export interface AssetAnalysisResponse {
     [key: string]: unknown;
 }
 
-export async function fetchAssetAnalysis(symbol: string): Promise<AssetAnalysisResponse> {
-    return fetchFromEngine<AssetAnalysisResponse>(`/analysis/${symbol}`);
+export async function fetchAssetAnalysis(
+    symbol: string,
+    options?: { market?: string; currency?: string }
+): Promise<AssetAnalysisResponse> {
+    const params = new URLSearchParams();
+    if (options?.market) params.set("market", options.market);
+    if (options?.currency) params.set("currency", options.currency);
+    const query = params.toString();
+    return fetchFromEngine<AssetAnalysisResponse>(`/analysis/${symbol}${query ? `?${query}` : ""}`);
 }
 
 /**
@@ -869,35 +883,35 @@ export interface MarketAnalysisData {
 /**
  * Get comprehensive BIST stocks analysis
  */
-export async function fetchBistStocksAnalysis(): Promise<MarketAnalysisData> {
+export async function fetchBistStocksAnalysis(_force?: boolean): Promise<MarketAnalysisData> {
     return fetchFromEngine<MarketAnalysisData>("/market/analysis/bist-stocks");
 }
 
 /**
  * Get US stocks analysis
  */
-export async function fetchUsStocksAnalysis(): Promise<MarketAnalysisData> {
+export async function fetchUsStocksAnalysis(_force?: boolean): Promise<MarketAnalysisData> {
     return fetchFromEngine<MarketAnalysisData>("/market/analysis/us-stocks");
 }
 
 /**
  * Get commodities analysis
  */
-export async function fetchCommoditiesAnalysis(): Promise<MarketAnalysisData> {
+export async function fetchCommoditiesAnalysis(_force?: boolean): Promise<MarketAnalysisData> {
     return fetchFromEngine<MarketAnalysisData>("/market/analysis/commodities");
 }
 
 /**
  * Get crypto analysis
  */
-export async function fetchCryptoAnalysis(): Promise<MarketAnalysisData> {
+export async function fetchCryptoAnalysis(_force?: boolean): Promise<MarketAnalysisData> {
     return fetchFromEngine<MarketAnalysisData>("/market/analysis/crypto");
 }
 
 /**
  * Get Turkish funds analysis
  */
-export async function fetchFundsAnalysis(): Promise<MarketAnalysisData> {
+export async function fetchFundsAnalysis(_force?: boolean): Promise<MarketAnalysisData> {
     return fetchFromEngine<MarketAnalysisData>("/market/analysis/funds");
 }
 

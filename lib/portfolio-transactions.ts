@@ -1,12 +1,11 @@
 import type {
   Portfolio,
   PortfolioAsset,
-  PortfolioTargetMode,
-  PortfolioTargetProfile,
   PortfolioAssetType,
   PortfolioTransactionType,
   Transaction,
 } from "@/services/portfolio.service";
+import type { PortfolioTargetMode, PortfolioTargetProfile } from "@/lib/portfolio-targets";
 
 const EPSILON = 1e-8;
 
@@ -16,6 +15,7 @@ type CanonicalTransaction = Transaction & {
   date: string;
   currency: string;
   quantity: number;
+  market?: string;
   asset_type?: PortfolioAssetType;
 };
 
@@ -24,6 +24,7 @@ type Lot = {
   price: number;
   date: string;
   currency: string;
+  market?: string;
   assetType?: PortfolioAssetType;
   assetName?: string;
   note?: string;
@@ -33,6 +34,7 @@ type PositionSeed = {
   symbol: string;
   weight?: number;
   type?: PortfolioAssetType;
+  market?: string;
   currency?: string;
   name?: string;
   targetProfile?: PortfolioTargetProfile;
@@ -75,6 +77,7 @@ function toCanonicalTransaction(
         date: tx.date,
         quantity: tx.quantity || 0,
         currency: tx.currency || fallback?.currency || "TRY",
+        market: tx.market || fallback?.market,
         asset_type: tx.asset_type || fallback?.type,
       },
     ];
@@ -92,6 +95,7 @@ function toCanonicalTransaction(
         price: tx.buy_price || 0,
         date: tx.buy_date || tx.sell_date,
         currency: tx.currency || fallback?.currency || "TRY",
+        market: tx.market || fallback?.market,
         asset_type: tx.asset_type || fallback?.type,
         asset_name: tx.asset_name || fallback?.name,
         hidden: true,
@@ -107,6 +111,7 @@ function toCanonicalTransaction(
         price: tx.sell_price,
         date: tx.sell_date,
         currency: tx.currency || fallback?.currency || "TRY",
+        market: tx.market || fallback?.market,
         asset_type: tx.asset_type || fallback?.type,
         asset_name: tx.asset_name || fallback?.name,
         note: tx.note,
@@ -131,6 +136,7 @@ function aggregateOpenLots(transactions: CanonicalTransaction[]): Record<string,
         price: tx.price,
         date: tx.date,
         currency: tx.currency,
+        market: tx.market,
         assetType: tx.asset_type,
         assetName: tx.asset_name,
         note: tx.note,
@@ -182,6 +188,7 @@ function reconcileSnapshotAssets(
         symbol: asset.symbol,
         weight: asset.weight,
         type: asset.type,
+        market: asset.market,
         currency: asset.currency,
         name: asset.name,
         targetProfile: asset.target_profile,
@@ -214,6 +221,7 @@ function reconcileSnapshotAssets(
         price: asset.avg_price || asset.avgPrice || 0,
         date: asset.purchase_date || new Date().toISOString(),
         currency: asset.currency || "TRY",
+        market: asset.market,
         asset_type: asset.type,
         asset_name: asset.name,
         note: "Imported opening transaction",
@@ -231,6 +239,7 @@ function reconcileSnapshotAssets(
         price: asset.avg_price || asset.avgPrice || 0,
         date: asset.purchase_date || new Date().toISOString(),
         currency: asset.currency || "TRY",
+        market: asset.market,
         asset_type: asset.type,
         asset_name: asset.name,
         note: "Imported reconciliation sell",
@@ -243,6 +252,7 @@ function reconcileSnapshotAssets(
   for (const tx of reconciled) {
     const fallback = snapshotMap.get(tx.symbol);
     tx.asset_type ||= fallback?.type;
+    tx.market ||= fallback?.market;
     tx.currency ||= fallback?.currency || "TRY";
   }
 
@@ -260,6 +270,7 @@ export function derivePortfolioState(
         symbol: asset.symbol,
         weight: asset.weight,
         type: asset.type,
+        market: asset.market,
         currency: asset.currency,
         name: asset.name,
         targetProfile: asset.target_profile,
@@ -285,6 +296,7 @@ export function derivePortfolioState(
         price: tx.price,
         date: tx.date,
         currency: tx.currency,
+        market: tx.market,
         assetType: tx.asset_type,
         assetName: tx.asset_name,
         note: tx.note,
@@ -354,6 +366,7 @@ export function derivePortfolioState(
     assetList.push({
       symbol,
       type: latestLot.assetType || snapshot?.type || "stock",
+      market: latestLot.market || snapshot?.market,
       quantity: totalQuantity,
       avg_price: totalQuantity > 0 ? totalCost / totalQuantity : 0,
       avgPrice: totalQuantity > 0 ? totalCost / totalQuantity : 0,
@@ -394,6 +407,7 @@ export function createTransactionInput(input: {
   quantity: number;
   price: number;
   date: string;
+  market?: string;
   currency?: string;
   assetType?: PortfolioAssetType;
   assetName?: string;
@@ -408,6 +422,7 @@ export function createTransactionInput(input: {
     quantity: input.quantity,
     price: input.price,
     date: input.date,
+    market: input.market,
     currency: input.currency || "TRY",
     asset_type: input.assetType,
     asset_name: input.assetName,

@@ -61,7 +61,7 @@ function formatNumber(value: number) {
   }).format(value);
 }
 
-function formatStamp(value?: string) {
+function formatStamp(value?: string | null) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;

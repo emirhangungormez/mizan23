@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { MarketService } from "@/services/market.service";
+import { MarketService, type MarketQuote } from "@/services/market.service";
 import { useDashboardStore } from "@/store/dashboard-store";
 import {
   useFavoritesStore,
@@ -72,6 +72,10 @@ type FavoriteTableRow = FavoriteListItem & {
   comparisonDelta?: number | null;
   comparisonLabel?: string | null;
 };
+
+function toRawMarketRow(row: MarketQuote | RawMarketRow): RawMarketRow {
+  return { ...row };
+}
 
 const MARKET_LABELS: Record<FavoriteMarket, string> = {
   bist: "BIST",
@@ -281,7 +285,7 @@ export default function FavoritesManagementPage() {
           const response = await MarketService.getAllBistStocks();
           marketMaps.set(
             "bist",
-            new Map((response.results || []).map((row) => [row.symbol, row as RawMarketRow])),
+            new Map((response.results || []).map((row) => [row.symbol, toRawMarketRow(row)])),
           );
         }
 
@@ -292,7 +296,7 @@ export default function FavoritesManagementPage() {
             MarketService.getUSMarkets().then((response) => {
               marketMaps.set(
                 "us",
-                new Map((response.all || []).map((row) => [row.symbol, row as RawMarketRow])),
+                new Map((response.all || []).map((row) => [row.symbol, toRawMarketRow(row)])),
               );
             }),
           );
@@ -303,7 +307,7 @@ export default function FavoritesManagementPage() {
             MarketService.getCryptoMarket().then((response) => {
               marketMaps.set(
                 "crypto",
-                new Map((response.all || []).map((row) => [row.symbol, row as RawMarketRow])),
+                new Map((response.all || []).map((row) => [row.symbol, toRawMarketRow(row)])),
               );
             }),
           );
@@ -314,7 +318,7 @@ export default function FavoritesManagementPage() {
             MarketService.getCommoditiesMarket().then((response) => {
               marketMaps.set(
                 "commodities",
-                new Map((response.all || []).map((row) => [row.symbol, row as RawMarketRow])),
+                new Map((response.all || []).map((row) => [row.symbol, toRawMarketRow(row)])),
               );
             }),
           );
@@ -325,7 +329,7 @@ export default function FavoritesManagementPage() {
             MarketService.getFundsMarket().then((response) => {
               marketMaps.set(
                 "funds",
-                new Map((response.all || []).map((row) => [row.symbol, row as RawMarketRow])),
+                new Map((response.all || []).map((row) => [row.symbol, toRawMarketRow(row)])),
               );
             }),
           );
@@ -338,7 +342,7 @@ export default function FavoritesManagementPage() {
             await fetchDashboardData();
           }
           const fxRows = useDashboardStore.getState().dashboardData?.fx || [];
-          marketMaps.set("fx", new Map(fxRows.map((row) => [row.symbol, row as RawMarketRow])));
+          marketMaps.set("fx", new Map(fxRows.map((row) => [row.symbol, toRawMarketRow(row)])));
         }
 
         const normalizedRows = list.items
@@ -609,7 +613,7 @@ export default function FavoritesManagementPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <Link href={`/market/${row.symbol}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
+                            <Link href={`/market/${row.symbol}?market=${row.market}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
                               {row.symbol}
                             </Link>
                             <FavoriteListPicker
@@ -729,7 +733,7 @@ export default function FavoritesManagementPage() {
                           {(index + 1).toString().padStart(2, "0")}
                         </td>
                         <td className="px-4 py-3">
-                          <Link href={`/market/${row.symbol}`} className="group/link flex flex-col gap-1">
+                          <Link href={`/market/${row.symbol}?market=${row.market}`} className="group/link flex flex-col gap-1">
                             <div className="flex items-center gap-2">
                               <span className="leading-none font-bold tracking-tight text-foreground transition-colors group-hover/link:text-primary">
                                 {row.symbol}

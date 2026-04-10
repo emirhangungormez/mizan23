@@ -72,7 +72,7 @@ const TYPE_COLORS = {
 };
 
 const triggerClassName =
-  "flex items-center gap-2 rounded-lg border border-border/70 bg-background px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/40";
+  "flex w-full items-center justify-between gap-2 rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/40 sm:justify-start sm:py-1.5";
 
 function repairDisplayText(value: string) {
   if (!value) return "";
@@ -360,7 +360,22 @@ export function QuickSearch() {
 
   const navigateTo = (item: SearchResult) => {
     setIsOpen(false);
-    router.push(`/market/${item.symbol}`);
+    const normalizedMarket = String(item.market || "").toLocaleLowerCase("tr-TR");
+    const marketParam =
+      normalizedMarket === "abd" || normalizedMarket === "nasdaq" || normalizedMarket === "nyse"
+        ? "us"
+        : normalizedMarket === "kripto"
+          ? "crypto"
+          : normalizedMarket === "döviz" || normalizedMarket === "doviz" || normalizedMarket === "fx"
+            ? "fx"
+            : normalizedMarket === "emtia"
+              ? "commodities"
+              : normalizedMarket === "fon"
+                ? "funds"
+                : normalizedMarket === "bist"
+                  ? "bist"
+                  : "";
+    router.push(`/market/${item.symbol}${marketParam ? `?market=${marketParam}` : ""}`);
   };
 
   const handleInputKeyDown = (event: React.KeyboardEvent) => {
@@ -379,8 +394,10 @@ export function QuickSearch() {
   return (
     <>
       <button onClick={() => setIsOpen(true)} className={triggerClassName}>
-        <Search className="size-4" />
-        <span className="hidden sm:inline">Ara...</span>
+        <div className="flex min-w-0 items-center gap-2">
+          <Search className="size-4 shrink-0" />
+          <span className="truncate">Varlik ara...</span>
+        </div>
         <kbd className="hidden items-center gap-0.5 rounded border bg-background px-1.5 py-0.5 text-[10px] font-mono md:inline-flex">
           <Command className="size-3" />K
         </kbd>

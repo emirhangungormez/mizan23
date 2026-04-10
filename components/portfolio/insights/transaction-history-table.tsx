@@ -19,13 +19,14 @@ export default function TransactionHistoryTable() {
 
     const currencySymbol = displayCurrency === 'USD' ? '$' : '₺';
     const locale = displayCurrency === 'USD' ? 'en-US' : 'tr-TR';
+    const getTxTimestamp = React.useCallback((value?: string) => (value ? new Date(value).getTime() : 0), []);
 
     // Sort transactions by sell date descending
     const sortedTransactions = React.useMemo(() => {
         return [...transactions].sort((a, b) =>
-            new Date(b.sell_date).getTime() - new Date(a.sell_date).getTime()
+            getTxTimestamp(b.sell_date) - getTxTimestamp(a.sell_date)
         );
-    }, [transactions]);
+    }, [getTxTimestamp, transactions]);
 
     if (!activePortfolio || transactions.length === 0) {
         return (
@@ -65,7 +66,8 @@ export default function TransactionHistoryTable() {
                     </thead>
                     <tbody className="divide-y divide-border">
                         {sortedTransactions.map((tx) => {
-                            const isProfit = tx.profit_loss >= 0;
+                            const realizedProfit = tx.profit_loss || 0;
+                            const isProfit = realizedProfit >= 0;
                             // Assuming tx values are in their original currency. We display them as recorded.
                             // But we might want to respect displayCurrency if needed. 
                             // For history, it's better to show recorded values usually, but let's stick to displayCurrency logic if possible or just show recorded symbol.
@@ -86,7 +88,7 @@ export default function TransactionHistoryTable() {
                                             <div className="flex items-center gap-1.5">
                                                 <div className="size-1.5 rounded-full bg-rose-500" />
                                                 <span className="text-[11px] font-medium text-foreground tabular-nums">
-                                                    {new Date(tx.sell_date).toLocaleDateString(locale)}
+                                                    {tx.sell_date ? new Date(tx.sell_date).toLocaleDateString(locale) : '-'}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-1.5 opacity-60">
@@ -105,10 +107,10 @@ export default function TransactionHistoryTable() {
                                     <td className="py-4 px-4">
                                         <div className="flex flex-col gap-0.5">
                                             <span className="text-[11px] font-bold text-foreground/90 tabular-nums">
-                                                {txCurrencySymbol}{tx.sell_price.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                {txCurrencySymbol}{(tx.sell_price || 0).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </span>
                                             <span className="text-[10px] font-medium text-muted-foreground tabular-nums">
-                                                Mly: {txCurrencySymbol}{tx.buy_price.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                Mly: {txCurrencySymbol}{(tx.buy_price || 0).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </span>
                                         </div>
                                     </td>
@@ -119,10 +121,10 @@ export default function TransactionHistoryTable() {
                                         )}>
                                             <div className="flex items-center gap-1 text-[11px]">
                                                 {isProfit ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
-                                                %{Math.abs(tx.profit_loss_pct).toFixed(2)}
+                                                %{Math.abs(tx.profit_loss_pct || 0).toFixed(2)}
                                             </div>
                                             <span className="text-[10px] opacity-80">
-                                                {isProfit ? "+" : "-"}{txCurrencySymbol}{Math.abs(tx.profit_loss).toLocaleString(locale, { minimumFractionDigits: 2 })}
+                                                {isProfit ? "+" : "-"}{txCurrencySymbol}{Math.abs(realizedProfit).toLocaleString(locale, { minimumFractionDigits: 2 })}
                                             </span>
                                         </div>
                                     </td>

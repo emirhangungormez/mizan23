@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ChevronLeft, PencilLine, Plus, Target } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { BarChart3, ChevronLeft, PencilLine, Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useDashboardStore } from "@/store/dashboard-store";
 import { usePerformanceCalculator } from "@/hooks/use-performance-calculator";
-import { usePortfolioAnalysis, usePortfolioStore, type PortfolioAsset, type Transaction } from "@/store/portfolio-store";
+import { usePortfolioAnalysis, usePortfolioStore, type PortfolioAnalysis, type PortfolioAsset, type Transaction } from "@/store/portfolio-store";
 import { normalizePortfolio } from "@/lib/portfolio-transactions";
 import { TransactionModal } from "@/components/portfolio/transaction-modal";
 import { AssetTargetDialog } from "@/components/portfolio/asset-target-dialog";
@@ -66,7 +67,36 @@ const PERIOD_OPTIONS = [
   { value: "ALL", label: "Tümü", short: "T" },
 ] as const;
 
+function resolveActiveTargetSnapshot(
+  asset: PortfolioAsset,
+  decision: NonNullable<PortfolioAnalysis["holding_decisions"]>[number] | undefined,
+  fallbackTargetReturnPct: number,
+  avgCostTRY: number,
+  convertToDisplay: (value: number) => number,
+) {
+  const resolvedMode = decision?.target_mode ?? asset.target_mode ?? "system";
+  const isManual = resolvedMode === "manual";
+  const resolvedReturnPct = isManual
+    ? decision?.target_return_pct ?? asset.target_return_pct ?? fallbackTargetReturnPct
+    : decision?.system_target_return_pct ?? decision?.target_return_pct ?? asset.target_return_pct ?? fallbackTargetReturnPct;
+
+  return {
+    isManual,
+    returnPct: resolvedReturnPct,
+    sourceLabel: decision?.target_source_label || (isManual ? "Manuel" : "Sistem"),
+    priceDisplay:
+      decision?.target_price != null
+        ? convertToDisplay(decision.target_price)
+        : decision?.system_target_price != null
+          ? convertToDisplay(decision.system_target_price)
+          : convertToDisplay(avgCostTRY * (1 + resolvedReturnPct / 100)),
+    distancePct: decision?.distance_to_target_pct ?? null,
+    warning: decision?.target_warning ?? null,
+  };
+}
+
 export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
+  const searchParams = useSearchParams();
   const portfolios = usePortfolioStore((state) => state.portfolios);
   const fetchPortfolios = usePortfolioStore((state) => state.fetchPortfolios);
   const setActivePortfolio = usePortfolioStore((state) => state.setActivePortfolio);
@@ -81,6 +111,7 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
   const [defaultSymbol, setDefaultSymbol] = React.useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] = React.useState<Transaction | null>(null);
   const [targetAsset, setTargetAsset] = React.useState<PortfolioAsset | null>(null);
+  const [isReportOpen, setIsReportOpen] = React.useState(false);
 
   React.useEffect(() => {
     fetchPortfolios();
@@ -97,7 +128,7 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
     return (portfolio?.assets || [])
       .map(
         (asset) =>
-          `${asset.symbol}:${asset.quantity}:${asset.avg_price}:${asset.target_profile || ""}:${asset.target_return_pct || ""}`
+          `${asset.symbol}:${asset.quantity}:${asset.avg_price}:${asset.target_profile || ""}:${asset.target_mode || ""}:${asset.target_return_pct || ""}`
       )
       .join("|");
   }, [portfolio?.assets]);
@@ -172,6 +203,7 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
         symbol: asset.symbol,
         name: asset.name || item?.name || asset.symbol,
         type: asset.type,
+        market: asset.market,
         asset,
         quantity: asset.quantity,
         currentPriceDisplay: convertToDisplay(currentTRY),
@@ -216,13 +248,20 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
   const holdingDecisionMap = React.useMemo(
     () =>
       Object.fromEntries(
-        (analysis?.portfolio_id === portfolio?.id ? (analysis.holding_decisions || []) : []).map((item) => [item.symbol, item])
+        (analysis && analysis.portfolio_id === portfolio?.id ? (analysis.holding_decisions || []) : []).map((item) => [item.symbol, item])
       ),
     [analysis, portfolio?.id]
   );
-  const portfolioReport = analysis?.portfolio_id === portfolio?.id ? analysis.portfolio_report : null;
+  const portfolioReport = analysis && analysis.portfolio_id === portfolio?.id ? analysis.portfolio_report : null;
+  const hasPortfolioReportData = (portfolioReport?.closed_trade_count || 0) > 0;
 
   const visibleTransactions = transactions.slice(0, 8);
+
+  React.useEffect(() => {
+    if (searchParams.get("panel") === "report") {
+      setIsReportOpen(true);
+    }
+  }, [searchParams]);
 
   const openTransactionModal = (type: "buy" | "sell", symbol: string | null = null) => {
     setEditingTransaction(null);
@@ -347,193 +386,212 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
             <MetricCard label="İşlem Kaydı" value={String(totals.transactionCount)} helper="Toplam alım / satış kaydı" />
           </div>
 
-          {portfolioReport && (portfolioReport.closed_trade_count || 0) > 0 ? (
-            <section className="rounded-xl border bg-card">
-              <div className="border-b px-4 py-4">
+          <section id="report-panel" className="rounded-xl border bg-card">
+            <div className="flex flex-col gap-3 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
                 <div className="text-lg font-medium tracking-tight">Sepet Raporu</div>
                 <div className="mt-1 text-sm text-muted-foreground">
-                  Kapanmis islemler uzerinden motorun giris ve cikis kararlari istatistiksel olarak okunur.
+                  Rapor paneli yalnizca ihtiyac oldugunda acilir; sayfayi gereksiz buyutmez.
                 </div>
               </div>
+              <Button
+                variant={isReportOpen ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setIsReportOpen((current) => !current)}
+                className="w-full sm:w-auto"
+              >
+                <BarChart3 className="size-4" />
+                {isReportOpen ? "Raporu Gizle" : "Raporu Ac"}
+              </Button>
+            </div>
 
-              <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-6">
-                <MetricCard label="Kapanmis Islem" value={String(portfolioReport.closed_trade_count || 0)} helper="Gerceklesmis round-trip sayisi" />
-                <MetricCard
-                  label="Kazanma Orani"
-                  value={`%${(portfolioReport.win_rate || 0).toFixed(1)}`}
-                  helper={`GA %{(portfolioReport.win_rate_confidence_interval?.lower || 0).toFixed(1)} - %{(portfolioReport.win_rate_confidence_interval?.upper || 0).toFixed(1)}`}
-                  tone={(portfolioReport.win_rate || 0) - 50}
-                />
-                <MetricCard
-                  label="Beklenen Getiri"
-                  value={formatPercent(portfolioReport.expectancy_pct, 2)}
-                  helper="Islem basi beklenen sonuc"
-                  tone={portfolioReport.expectancy_pct || 0}
-                />
-                <MetricCard
-                  label="Giris Dogrulugu"
-                  value={`%${(portfolioReport.entry_signal_accuracy_pct || 0).toFixed(1)}`}
-                  helper={`${portfolioReport.entry_signal_evaluated_count || 0} islemde test edildi`}
-                  tone={(portfolioReport.entry_signal_accuracy_pct || 0) - 50}
-                />
-                <MetricCard
-                  label="Cikis Dogrulugu"
-                  value={`%${(portfolioReport.exit_signal_accuracy_pct || 0).toFixed(1)}`}
-                  helper={`${portfolioReport.exit_signal_evaluated_count || 0} islemde test edildi`}
-                  tone={(portfolioReport.exit_signal_accuracy_pct || 0) - 50}
-                />
-                <MetricCard
-                  label="Profit Factor"
-                  value={(portfolioReport.profit_factor || 0).toFixed(2)}
-                  helper={`${(portfolioReport.avg_holding_days || 0).toFixed(1)} gun ortalama tasima`}
-                  tone={(portfolioReport.profit_factor || 0) - 1}
-                />
-              </div>
+            {isReportOpen ? (
+              hasPortfolioReportData ? (
+                <>
+                  <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-6">
+                    <MetricCard label="Kapanmis Islem" value={String(portfolioReport?.closed_trade_count || 0)} helper="Gerceklesmis round-trip sayisi" />
+                    <MetricCard
+                      label="Kazanma Orani"
+                      value={`%${(portfolioReport?.win_rate || 0).toFixed(1)}`}
+                      helper={`GA %{(portfolioReport?.win_rate_confidence_interval?.lower || 0).toFixed(1)} - %{(portfolioReport?.win_rate_confidence_interval?.upper || 0).toFixed(1)}`}
+                      tone={(portfolioReport?.win_rate || 0) - 50}
+                    />
+                    <MetricCard
+                      label="Beklenen Getiri"
+                      value={formatPercent(portfolioReport?.expectancy_pct, 2)}
+                      helper="Islem basi beklenen sonuc"
+                      tone={portfolioReport?.expectancy_pct || 0}
+                    />
+                    <MetricCard
+                      label="Giris Dogrulugu"
+                      value={`%${(portfolioReport?.entry_signal_accuracy_pct || 0).toFixed(1)}`}
+                      helper={`${portfolioReport?.entry_signal_evaluated_count || 0} islemde test edildi`}
+                      tone={(portfolioReport?.entry_signal_accuracy_pct || 0) - 50}
+                    />
+                    <MetricCard
+                      label="Cikis Dogrulugu"
+                      value={`%${(portfolioReport?.exit_signal_accuracy_pct || 0).toFixed(1)}`}
+                      helper={`${portfolioReport?.exit_signal_evaluated_count || 0} islemde test edildi`}
+                      tone={(portfolioReport?.exit_signal_accuracy_pct || 0) - 50}
+                    />
+                    <MetricCard
+                      label="Profit Factor"
+                      value={(portfolioReport?.profit_factor || 0).toFixed(2)}
+                      helper={`${(portfolioReport?.avg_holding_days || 0).toFixed(1)} gun ortalama tasima`}
+                      tone={(portfolioReport?.profit_factor || 0) - 1}
+                    />
+                  </div>
 
-              <div className="grid grid-cols-1 gap-4 border-t p-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
-                <div className="rounded-lg border">
-                  <div className="border-b px-4 py-3 text-sm font-medium">Son Kapanan Islemler</div>
-                  <div className="max-h-[340px] overflow-auto no-scrollbar">
-                    <table className="min-w-full text-sm">
-                      <thead className="sticky top-0 bg-card text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-                        <tr>
-                          <th className="px-4 py-3 font-medium border-b">Varlik</th>
-                          <th className="px-4 py-3 font-medium border-b">Tarih</th>
-                          <th className="px-4 py-3 font-medium text-right border-b">Getiri</th>
-                          <th className="px-4 py-3 font-medium border-b">Motor</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {(portfolioReport.recent_closed_trades || []).slice(0, 12).map((trade) => (
-                          <tr key={`${trade.symbol}-${trade.sell_date}-${trade.buy_date}`} className="hover:bg-muted/40">
-                            <td className="px-4 py-3 align-top">
-                              <Link
-                                href={`/market/${trade.symbol}`}
-                                className="inline-block rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              >
-                                <div className="font-medium text-foreground transition-colors hover:text-primary">
-                                  {trade.name || trade.symbol}
-                                </div>
-                              </Link>
-                              <Link
-                                href={`/market/${trade.symbol}`}
-                                className="mt-1 inline-block text-xs text-muted-foreground transition-colors hover:text-foreground"
-                              >
-                                {trade.symbol}
-                              </Link>
-                            </td>
-                            <td className="px-4 py-3 align-top">
-                              <div className="text-xs text-muted-foreground">{formatDate(trade.buy_date || undefined)}</div>
-                              <div className="mt-1 text-xs text-muted-foreground">{formatDate(trade.sell_date || undefined)}</div>
-                              <div className="mt-1 text-[11px] text-muted-foreground">{trade.holding_days ?? 0} gun</div>
-                            </td>
-                            <td className={cn("px-4 py-3 text-right align-top font-medium tabular-nums", metricTone(trade.realized_return_pct || 0))}>
-                              <div>{formatPercent(trade.realized_return_pct, 2)}</div>
-                              <div className="mt-1 text-xs text-muted-foreground">
-                                {trade.realized_pnl != null
-                                  ? `${currencySymbol}${Math.abs(trade.realized_pnl).toLocaleString(locale, { maximumFractionDigits: displayCurrency === "USD" ? 2 : 0 })}`
-                                  : "--"}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 align-top">
-                              <div className="flex flex-wrap gap-2">
-                                {trade.entry_signal ? (
-                                  <Badge
-                                    variant="outline"
-                                    className={cn(
-                                      "rounded-md px-2 py-0 text-[10px]",
-                                      trade.entry_signal_alignment === true
-                                        ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-700"
-                                        : trade.entry_signal_alignment === false
-                                          ? "border-rose-500/20 bg-rose-500/5 text-rose-700"
-                                          : "border-slate-500/20 bg-slate-500/5 text-slate-700"
-                                    )}
+                  <div className="grid grid-cols-1 gap-4 border-t p-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
+                    <div className="rounded-lg border">
+                      <div className="border-b px-4 py-3 text-sm font-medium">Son Kapanan Islemler</div>
+                      <div className="max-h-[340px] overflow-auto no-scrollbar">
+                        <table className="min-w-full text-sm">
+                          <thead className="sticky top-0 bg-card text-left text-[10px] uppercase tracking-wide text-muted-foreground">
+                            <tr>
+                              <th className="px-4 py-3 font-medium border-b">Varlik</th>
+                              <th className="px-4 py-3 font-medium border-b">Tarih</th>
+                              <th className="px-4 py-3 font-medium text-right border-b">Getiri</th>
+                              <th className="px-4 py-3 font-medium border-b">Motor</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {(portfolioReport?.recent_closed_trades || []).slice(0, 12).map((trade) => (
+                              <tr key={`${trade.symbol}-${trade.sell_date}-${trade.buy_date}`} className="hover:bg-muted/40">
+                                <td className="px-4 py-3 align-top">
+                                  <Link
+                                    href={`/market/${trade.symbol}`}
+                                    className="inline-block rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                   >
-                                    {trade.entry_signal}
-                                  </Badge>
-                                ) : null}
-                                {trade.exit_action ? (
-                                  <Badge
-                                    variant="outline"
-                                    className={cn(
-                                      "rounded-md px-2 py-0 text-[10px]",
-                                      trade.exit_signal_alignment === true
-                                        ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-700"
-                                        : trade.exit_signal_alignment === false
-                                          ? "border-rose-500/20 bg-rose-500/5 text-rose-700"
-                                          : "border-slate-500/20 bg-slate-500/5 text-slate-700"
-                                    )}
+                                    <div className="font-medium text-foreground transition-colors hover:text-primary">
+                                      {trade.name || trade.symbol}
+                                    </div>
+                                  </Link>
+                                  <Link
+                                    href={`/market/${trade.symbol}`}
+                                    className="mt-1 inline-block text-xs text-muted-foreground transition-colors hover:text-foreground"
                                   >
-                                    {trade.exit_action}
-                                  </Badge>
-                                ) : null}
-                              </div>
-                              <div className="mt-2 text-[11px] text-muted-foreground">
-                                Giris: {trade.entry_signal_alignment == null ? "Yok" : trade.entry_signal_alignment ? "Uyumlu" : "Aykiri"}
-                              </div>
-                              <div className="text-[11px] text-muted-foreground">
-                                Cikis: {trade.exit_signal_alignment == null ? "Yok" : trade.exit_signal_alignment ? "Uyumlu" : "Aykiri"}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Motor Yorumu</div>
-                    <div className="mt-3 space-y-2">
-                      {(portfolioReport.lessons || []).length > 0 ? (
-                        (portfolioReport.lessons || []).map((lesson, index) => (
-                          <div key={index} className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                            {lesson}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                          Istatistiksel yorum icin daha fazla kapanmis islem birikmesi gerekiyor.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border p-4">
-                    <div className="text-sm font-medium">Ek Bulgular</div>
-                    <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-                      <div>Ortalama gerceklesen getiri: <span className={cn("font-medium", metricTone(portfolioReport.avg_realized_return_pct || 0))}>{formatPercent(portfolioReport.avg_realized_return_pct, 2)}</span></div>
-                      <div>Medyan getiri: <span className={cn("font-medium", metricTone(portfolioReport.median_realized_return_pct || 0))}>{formatPercent(portfolioReport.median_realized_return_pct, 2)}</span></div>
-                      <div>Ortalama beklenen getiri: <span className={cn("font-medium", metricTone(portfolioReport.expected_return_avg_pct || 0))}>{formatPercent(portfolioReport.expected_return_avg_pct, 2)}</span></div>
-                      <div>Gerceklesen - beklenen fark: <span className={cn("font-medium", metricTone(portfolioReport.realized_vs_expected_return_avg_pct || 0))}>{formatPercent(portfolioReport.realized_vs_expected_return_avg_pct, 2)}</span></div>
-                      <div>Sistem onayi ile acilan islem: <span className="font-medium text-foreground">{portfolioReport.entry_followed_trade_count || 0}</span></div>
-                      <div>Sistem onayli islemlerde kazanma: <span className={cn("font-medium", metricTone((portfolioReport.entry_followed_win_rate || 0) - 50))}>%{(portfolioReport.entry_followed_win_rate || 0).toFixed(1)}</span></div>
-                      <div>Olasilik hata skoru: <span className="font-medium text-foreground">{(portfolioReport.probability_brier_score || 0).toFixed(4)}</span></div>
-                    </div>
-                  </div>
-
-                  {(portfolioReport.signal_bucket_summary && Object.keys(portfolioReport.signal_bucket_summary).length > 0) ? (
-                    <div className="rounded-lg border p-4">
-                      <div className="text-sm font-medium">Sinyal Bantlari</div>
-                      <div className="mt-3 space-y-2">
-                        {Object.entries(portfolioReport.signal_bucket_summary).map(([bucket, stats]) => (
-                          <div key={bucket} className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                            <div className="font-medium text-foreground">{bucket}</div>
-                            <div className="mt-1">Kayit: {stats.count}</div>
-                            <div>Kazanma: %{stats.win_rate.toFixed(1)}</div>
-                            <div className={cn(metricTone(stats.avg_realized_return_pct))}>
-                              Ortalama getiri: {formatPercent(stats.avg_realized_return_pct, 2)}
-                            </div>
-                          </div>
-                        ))}
+                                    {trade.symbol}
+                                  </Link>
+                                </td>
+                                <td className="px-4 py-3 align-top">
+                                  <div className="text-xs text-muted-foreground">{formatDate(trade.buy_date || undefined)}</div>
+                                  <div className="mt-1 text-xs text-muted-foreground">{formatDate(trade.sell_date || undefined)}</div>
+                                  <div className="mt-1 text-[11px] text-muted-foreground">{trade.holding_days ?? 0} gun</div>
+                                </td>
+                                <td className={cn("px-4 py-3 text-right align-top font-medium tabular-nums", metricTone(trade.realized_return_pct || 0))}>
+                                  <div>{formatPercent(trade.realized_return_pct, 2)}</div>
+                                  <div className="mt-1 text-xs text-muted-foreground">
+                                    {trade.realized_pnl != null
+                                      ? `${currencySymbol}${Math.abs(trade.realized_pnl).toLocaleString(locale, { maximumFractionDigits: displayCurrency === "USD" ? 2 : 0 })}`
+                                      : "--"}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 align-top">
+                                  <div className="flex flex-wrap gap-2">
+                                    {trade.entry_signal ? (
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "rounded-md px-2 py-0 text-[10px]",
+                                          trade.entry_signal_alignment === true
+                                            ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-700"
+                                            : trade.entry_signal_alignment === false
+                                              ? "border-rose-500/20 bg-rose-500/5 text-rose-700"
+                                              : "border-slate-500/20 bg-slate-500/5 text-slate-700"
+                                        )}
+                                      >
+                                        {trade.entry_signal}
+                                      </Badge>
+                                    ) : null}
+                                    {trade.exit_action ? (
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          "rounded-md px-2 py-0 text-[10px]",
+                                          trade.exit_signal_alignment === true
+                                            ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-700"
+                                            : trade.exit_signal_alignment === false
+                                              ? "border-rose-500/20 bg-rose-500/5 text-rose-700"
+                                              : "border-slate-500/20 bg-slate-500/5 text-slate-700"
+                                        )}
+                                      >
+                                        {trade.exit_action}
+                                      </Badge>
+                                    ) : null}
+                                  </div>
+                                  <div className="mt-2 text-[11px] text-muted-foreground">
+                                    Giris: {trade.entry_signal_alignment == null ? "Yok" : trade.entry_signal_alignment ? "Uyumlu" : "Aykiri"}
+                                  </div>
+                                  <div className="text-[11px] text-muted-foreground">
+                                    Cikis: {trade.exit_signal_alignment == null ? "Yok" : trade.exit_signal_alignment ? "Uyumlu" : "Aykiri"}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
-                  ) : null}
+
+                    <div className="space-y-4">
+                      <div className="rounded-lg border p-4">
+                        <div className="text-sm font-medium">Motor Yorumu</div>
+                        <div className="mt-3 space-y-2">
+                          {(portfolioReport?.lessons || []).length > 0 ? (
+                            (portfolioReport?.lessons || []).map((lesson, index) => (
+                              <div key={index} className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                                {lesson}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                              Istatistiksel yorum icin daha fazla kapanmis islem birikmesi gerekiyor.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border p-4">
+                        <div className="text-sm font-medium">Ek Bulgular</div>
+                        <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                          <div>Ortalama gerceklesen getiri: <span className={cn("font-medium", metricTone(portfolioReport?.avg_realized_return_pct || 0))}>{formatPercent(portfolioReport?.avg_realized_return_pct, 2)}</span></div>
+                          <div>Medyan getiri: <span className={cn("font-medium", metricTone(portfolioReport?.median_realized_return_pct || 0))}>{formatPercent(portfolioReport?.median_realized_return_pct, 2)}</span></div>
+                          <div>Ortalama beklenen getiri: <span className={cn("font-medium", metricTone(portfolioReport?.expected_return_avg_pct || 0))}>{formatPercent(portfolioReport?.expected_return_avg_pct, 2)}</span></div>
+                          <div>Gerceklesen - beklenen fark: <span className={cn("font-medium", metricTone(portfolioReport?.realized_vs_expected_return_avg_pct || 0))}>{formatPercent(portfolioReport?.realized_vs_expected_return_avg_pct, 2)}</span></div>
+                          <div>Sistem onayi ile acilan islem: <span className="font-medium text-foreground">{portfolioReport?.entry_followed_trade_count || 0}</span></div>
+                          <div>Sistem onayli islemlerde kazanma: <span className={cn("font-medium", metricTone((portfolioReport?.entry_followed_win_rate || 0) - 50))}>%{(portfolioReport?.entry_followed_win_rate || 0).toFixed(1)}</span></div>
+                          <div>Olasilik hata skoru: <span className="font-medium text-foreground">{(portfolioReport?.probability_brier_score || 0).toFixed(4)}</span></div>
+                        </div>
+                      </div>
+
+                      {(portfolioReport?.signal_bucket_summary && Object.keys(portfolioReport.signal_bucket_summary).length > 0) ? (
+                        <div className="rounded-lg border p-4">
+                          <div className="text-sm font-medium">Sinyal Bantlari</div>
+                          <div className="mt-3 space-y-2">
+                            {Object.entries(portfolioReport.signal_bucket_summary).map(([bucket, stats]) => (
+                              <div key={bucket} className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                                <div className="font-medium text-foreground">{bucket}</div>
+                                <div className="mt-1">Kayit: {stats.count}</div>
+                                <div>Kazanma: %{stats.win_rate.toFixed(1)}</div>
+                                <div className={cn(metricTone(stats.avg_realized_return_pct))}>
+                                  Ortalama getiri: {formatPercent(stats.avg_realized_return_pct, 2)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="px-4 py-8 text-sm text-muted-foreground">
+                  Bu sepet icin rapor olusturacak kadar kapanmis islem henuz birikmedi. Ilk kapanmis islemler geldikce panel otomatik dolacak.
                 </div>
-              </div>
-            </section>
-          ) : null}
+              )
+            ) : null}
+          </section>
 
           <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.72fr)]">
             <section className="flex flex-col rounded-xl border bg-card xl:max-h-[500px]">
@@ -558,16 +616,22 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
                 <div className="space-y-3 p-4 lg:hidden">
                   {positions.map((position) => {
                     const decision = holdingDecisionMap[position.symbol];
-                    const activeTargetReturnPct = decision?.target_return_pct ?? position.targetReturnPct;
+                    const targetSnapshot = resolveActiveTargetSnapshot(
+                      position.asset,
+                      decision,
+                      position.targetReturnPct,
+                      position.avgCostTRY,
+                      convertToDisplay
+                    );
                     return (
                       <div key={position.symbol} className="rounded-xl border bg-background p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <Link href={`/market/${position.symbol}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
+                            <Link href={`/market/${position.symbol}${position.market ? `?market=${encodeURIComponent(String(position.market))}` : ""}`} className="font-semibold tracking-tight text-foreground transition-colors hover:text-primary">
                               {position.name}
                             </Link>
                             <div className="mt-1 flex flex-wrap items-center gap-2">
-                              <Link href={`/market/${position.symbol}`} className="text-xs text-muted-foreground transition-colors hover:text-foreground">
+                              <Link href={`/market/${position.symbol}${position.market ? `?market=${encodeURIComponent(String(position.market))}` : ""}`} className="text-xs text-muted-foreground transition-colors hover:text-foreground">
                                 {position.symbol}
                               </Link>
                               <Badge variant="secondary" className="h-5 rounded-md border-0 bg-muted px-2 py-0 text-[9px] font-medium text-muted-foreground">
@@ -615,15 +679,15 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                           <span className={cn(
                             "inline-flex rounded-full border px-2 py-0.5 font-medium",
-                            decision?.target_mode === "manual"
+                            targetSnapshot.isManual
                               ? "border-amber-500/20 bg-amber-500/10 text-amber-700"
                               : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700"
                           )}>
-                            Hedef +%{activeTargetReturnPct.toFixed(1)}
+                            {targetSnapshot.sourceLabel} +%{targetSnapshot.returnPct.toFixed(1)}
                           </span>
-                          {decision?.action ? (
-                            <span className={cn("inline-flex rounded-full border px-2 py-0.5 font-medium", actionTone(decision.action))}>
-                              {decision.action}
+                          {decision?.holding_action ? (
+                            <span className={cn("inline-flex rounded-full border px-2 py-0.5 font-medium", actionTone(decision.holding_action))}>
+                              {decision.holding_action}
                             </span>
                           ) : null}
                           <span className="text-muted-foreground">Ağırlık %{position.weight.toFixed(1)}</span>
@@ -652,15 +716,18 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
                     <tbody className="divide-y bg-card">
                       {positions.map((position) => {
                         const decision = holdingDecisionMap[position.symbol];
-                        const activeTargetReturnPct = decision?.target_return_pct ?? position.targetReturnPct;
-                        const activeTargetPriceDisplay = convertToDisplay(
-                          position.avgCostTRY * (1 + activeTargetReturnPct / 100)
+                        const targetSnapshot = resolveActiveTargetSnapshot(
+                          position.asset,
+                          decision,
+                          position.targetReturnPct,
+                          position.avgCostTRY,
+                          convertToDisplay
                         );
                         return (
                         <tr key={position.symbol} className="hover:bg-muted/50 transition-colors">
                           <td className="px-4 py-4 align-top">
                             <Link
-                              href={`/market/${position.symbol}`}
+                              href={`/market/${position.symbol}${position.market ? `?market=${encodeURIComponent(String(position.market))}` : ""}`}
                               className="group inline-block rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                               <div className="font-medium text-foreground transition-colors group-hover:text-primary">
@@ -669,7 +736,7 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
                             </Link>
                             <div className="mt-1 flex items-center gap-2">
                               <Link
-                                href={`/market/${position.symbol}`}
+                                href={`/market/${position.symbol}${position.market ? `?market=${encodeURIComponent(String(position.market))}` : ""}`}
                                 className="text-xs text-muted-foreground transition-colors hover:text-foreground"
                               >
                                 {position.symbol}
@@ -707,37 +774,37 @@ export function PortfolioWorkspace({ portfolioId }: { portfolioId: string }) {
                             <div className="space-y-2">
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-sm font-semibold text-foreground">
-                                  +%{(decision?.target_return_pct ?? position.targetReturnPct).toFixed(1)}
+                                  +%{targetSnapshot.returnPct.toFixed(1)}
                                 </span>
                                 <span className={cn(
                                   "inline-flex rounded-full border px-2 py-0.5 text-[10px] font-medium",
-                                  decision?.target_mode === "manual"
+                                  targetSnapshot.isManual
                                     ? "border-amber-500/20 bg-amber-500/10 text-amber-700"
                                     : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700"
                                 )}>
-                                  {decision?.target_source_label || "Sistem"}
+                                  {targetSnapshot.sourceLabel}
                                 </span>
                               </div>
-                              {decision?.target_mode === "manual" && decision?.system_target_return_pct != null ? (
+                              {targetSnapshot.isManual && decision?.system_target_return_pct != null ? (
                                 <div className="text-xs text-amber-700">
                                   Sistem onerisi: %{decision.system_target_return_pct.toFixed(1)}
                                 </div>
                               ) : null}
                               <div className="text-xs text-muted-foreground">
                                 Hedef fiyat {currencySymbol}
-                                {activeTargetPriceDisplay.toLocaleString(locale, {
+                                {targetSnapshot.priceDisplay.toLocaleString(locale, {
                                   maximumFractionDigits: displayCurrency === "USD" ? 2 : 0,
                                 })}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {decision?.distance_to_target_pct != null
-                                  ? decision.distance_to_target_pct <= 0
+                                {targetSnapshot.distancePct != null
+                                  ? targetSnapshot.distancePct <= 0
                                     ? "Hedefe ulasildi"
-                                    : `Hedefe kalan: %${decision.distance_to_target_pct.toFixed(1)}`
+                                    : `Hedefe kalan: %${targetSnapshot.distancePct.toFixed(1)}`
                                   : "Hedef plani secilebilir"}
                               </div>
-                              {decision?.target_warning ? (
-                                <div className="text-xs text-amber-700">{decision.target_warning}</div>
+                              {targetSnapshot.warning ? (
+                                <div className="text-xs text-amber-700">{targetSnapshot.warning}</div>
                               ) : null}
                             </div>
                           </td>

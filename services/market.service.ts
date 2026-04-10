@@ -485,6 +485,7 @@ export class MarketService {
         scanned_symbols?: number;
         window_days?: number;
         generated_at?: string;
+        scan_in_progress?: boolean;
     }> {
         try {
             clearEngineCache("/market/bist/dividends/upcoming");

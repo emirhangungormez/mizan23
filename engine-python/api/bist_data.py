@@ -2018,21 +2018,56 @@ class BISTDataStore:
         started_at = time.time()
         snapshot_payload = load_latest_bist_proprietary_snapshot() or {}
         global_reference = snapshot_payload.get("global_reference") if isinstance(snapshot_payload, dict) else None
-        snapshot_stocks = [
-            self._hydrate_snapshot_stock(dict(item), global_reference)
-            for item in (snapshot_payload.get("stocks") or [])
-            if item.get("symbol")
-        ]
+        snapshot_stocks: List[Dict[str, Any]] = []
+        raw_snapshot_stocks = snapshot_payload.get("stocks") if isinstance(snapshot_payload, dict) else []
+        if isinstance(raw_snapshot_stocks, list):
+            for item in raw_snapshot_stocks:
+                if not isinstance(item, dict) or not item.get("symbol"):
+                    continue
+                try:
+                    hydrated = self._hydrate_snapshot_stock(dict(item), global_reference)
+                    if isinstance(hydrated, dict) and hydrated.get("symbol"):
+                        snapshot_stocks.append(hydrated)
+                except Exception as exc:
+                    logger.warning(
+                        "[BISTStore] Skipping malformed snapshot stock in analysis overview",
+                        extra={"symbol": item.get("symbol"), "error": str(exc)},
+                    )
 
         if snapshot_stocks:
             stocks = snapshot_stocks
             used_snapshot = True
         else:
             stocks, used_snapshot = self.get_all_stocks_or_snapshot()
-        advice = self._build_analysis_buckets(stocks)
-        period_lists = self._build_analysis_period_lists(stocks)
-        portfolio_candidates = self._build_analysis_portfolio_candidates(stocks)
-        upcoming_dividends = self.get_upcoming_dividends(days=60, force=False)
+        try:
+            advice = self._build_analysis_buckets(stocks)
+        except Exception as exc:
+            logger.exception("[BISTStore] Analysis overview advice build error", extra={"error": str(exc)})
+            advice = {"buy_now": [], "buy_week": [], "hold": [], "sell": []}
+
+        try:
+            period_lists = self._build_analysis_period_lists(stocks)
+        except Exception as exc:
+            logger.exception("[BISTStore] Analysis overview period build error", extra={"error": str(exc)})
+            period_lists = []
+
+        try:
+            portfolio_candidates = self._build_analysis_portfolio_candidates(stocks)
+        except Exception as exc:
+            logger.exception("[BISTStore] Analysis overview portfolio candidates error", extra={"error": str(exc)})
+            portfolio_candidates = []
+
+        try:
+            upcoming_dividends = self.get_upcoming_dividends(days=60, force=False)
+        except Exception as exc:
+            logger.exception("[BISTStore] Analysis overview upcoming dividends error", extra={"error": str(exc)})
+            upcoming_dividends = {
+                "results": [],
+                "total": 0,
+                "scanned_symbols": 0,
+                "generated_at": None,
+                "scan_in_progress": False,
+            }
 
         payload = {
             "generated_at": datetime.now().isoformat(),

@@ -86,9 +86,13 @@ export class AnalysisService {
     /**
      * Get comprehensive analysis for a single asset
      */
-    static async analyzeAsset(symbol: string): Promise<AssetAnalysis | null> {
+    static async analyzeAsset(symbol: string, options?: { market?: string; currency?: string }): Promise<AssetAnalysis | null> {
         try {
-            const data = await fetchFromEngine<AssetAnalysis>(`/analysis/${symbol}`);
+            const params = new URLSearchParams();
+            if (options?.market) params.set("market", options.market);
+            if (options?.currency) params.set("currency", options.currency);
+            const query = params.toString();
+            const data = await fetchFromEngine<AssetAnalysis>(`/analysis/${symbol}${query ? `?${query}` : ""}`);
             return data;
         } catch (error) {
             console.error(`[AnalysisService] Failed to analyze ${symbol}:`, error);

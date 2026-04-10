@@ -24,40 +24,40 @@ interface CandlestickChartProps {
     }>;
     height?: number;
     symbol?: string;
+    period?: string;
+    interval?: string;
     useHeikinAshi?: boolean;
 }
 
 // Candlestick chart using Lightweight Charts
-function CandlestickChartInner({ data, height = 400, symbol, useHeikinAshi = false }: CandlestickChartProps) {
+function CandlestickChartInner({ data, height = 400, symbol, period = "1mo", interval = "1d", useHeikinAshi = false }: CandlestickChartProps) {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const { theme } = useTheme();
     const [haData, setHaData] = useState<CandlestickChartProps["data"]>([]);
 
     useEffect(() => {
         if (useHeikinAshi && symbol) {
+            setHaData([]);
             const fetchHA = async () => {
                 const MarketService = (await import("@/services/market.service")).MarketService;
-                const res = await MarketService.getHeikinAshi(symbol);
-                if (res && res.data) {
-                    setHaData(res.data);
+                const res = await MarketService.getHeikinAshi(symbol, period, interval);
+                const nextData = Array.isArray(res?.data) ? (res.data as CandlestickChartProps["data"]) : null;
+                if (nextData) {
+                    setHaData(nextData);
                 }
             };
             fetchHA();
+        } else {
+            setHaData([]);
         }
-    }, [useHeikinAshi, symbol]);
+    }, [interval, period, useHeikinAshi, symbol]);
 
     useEffect(() => {
         const displayData = useHeikinAshi ? haData : data;
         if (!chartContainerRef.current || !displayData || displayData.length === 0) return;
 
-        let chart: {
-            remove: () => void;
-            applyOptions: (options: { width: number }) => void;
-            timeScale: () => { fitContent: () => void };
-        } | null = null;
-        let candlestickSeries: {
-            setData: (data: Array<{ time: number; open: number; high: number; low: number; close: number }>) => void;
-        } | null = null;
+        let chart: any = null;
+        let candlestickSeries: any = null;
 
         const initChart = async () => {
             try {

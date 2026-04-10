@@ -101,6 +101,7 @@ export function AddAssetModal({
                         // Map API type to frontend type
                         let frontendType: AssetType = 'stock';
                         if (result.type === 'forex') frontendType = 'fx';
+                        if (result.type === 'cash') frontendType = 'cash';
                         if (result.type === 'crypto') frontendType = 'crypto';
                         if (result.type === 'commodity') frontendType = 'commodity';
                         if (result.type === 'fund') frontendType = 'fund';
@@ -111,7 +112,7 @@ export function AddAssetModal({
                             name: result.name,
                             type: frontendType,
                             market: result.market,
-                            price: result.price,
+                            price: result.price ?? (result.type === 'cash' ? 1 : undefined),
                             change: result.change,
                             currency: result.currency || (result.type === 'crypto' || result.type === 'commodity' || result.market === 'NASDAQ' || result.market === 'NYSE' ? 'USD' : 'TRY')
                         };
@@ -139,7 +140,7 @@ export function AddAssetModal({
     React.useEffect(() => {
         if (type === "crypto" || type === "commodity" || type === "all") {
             // Keep current currency if all
-        } else if (type === "fund") {
+        } else if (type === "fund" || type === "cash") {
             setCurrency("TRY");
         } else {
             setCurrency(type === "fx" || type === "stock" ? "TRY" : "USD");
@@ -194,6 +195,7 @@ export function AddAssetModal({
             const success = await addAsset(portfolioId, {
                 symbol: selectedAsset.symbol,
                 type: selectedAsset.type === 'all' ? type : selectedAsset.type,
+                market: selectedAsset.market,
                 quantity: parseFloat(quantity),
                 purchasePrice: avgCost ? parseFloat(avgCost) : selectedAsset.price || 0,
                 purchaseDate: formattedDate,

@@ -63,7 +63,7 @@ export function CompanyInsights({ symbol }: CompanyInsightsProps) {
                     MarketService.getETFHolders(symbol)
                 ]);
                 setSignals(sig);
-                setEtfHolders(etf?.holders || []);
+                setEtfHolders(Array.isArray(etf?.holders) ? (etf.holders as ETFHolderItem[]) : []);
             } catch (error) {
                 console.error("Failed to fetch insights:", error);
             } finally {

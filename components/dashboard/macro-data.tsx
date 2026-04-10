@@ -14,7 +14,7 @@ import { fetchMacroIndicators, fetchBenchmarks } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface MacroDataProps {
-    period?: 'daily' | 'weekly' | 'monthly' | 'ytd' | 'yearly' | 'five_years';
+    period?: 'daily' | 'weekly' | 'monthly' | 'ytd' | 'yearly' | 'five_years' | 'all';
     startDate?: string | null;
 }
 
@@ -33,7 +33,8 @@ const DEFAULT_BENCHMARKS: Record<string, BenchmarkData> = {
     'monthly': { inflation: 2.4, gold: 4.8, bist100: 6.2, interest_rate: 3.17 },
     'ytd': { inflation: 0.1, gold: 0.5, bist100: 0.2, interest_rate: 0.2 },
     'yearly': { inflation: 32.5, gold: 38.2, bist100: 28.4, interest_rate: 38.0 },
-    'five_years': { inflation: 150.5, gold: 280.2, bist100: 450.4, interest_rate: 120.0 }
+    'five_years': { inflation: 150.5, gold: 280.2, bist100: 450.4, interest_rate: 120.0 },
+    'all': { inflation: 32.5, gold: 38.2, bist100: 28.4, interest_rate: 38.0 }
 };
 
 // Macro indicator data from API

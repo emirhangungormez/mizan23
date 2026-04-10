@@ -6,12 +6,21 @@ import { useTheme } from "next-themes";
 type TradingViewAdvancedChartProps = {
   symbol: string;
   assetType?: "STOCK" | "INDEX" | "FOREX" | "CRYPTO" | "FUND";
+  market?: string;
+  exchange?: string;
   period?: string;
   height?: number;
 };
 
-function resolveTradingViewSymbol(symbol: string, assetType?: TradingViewAdvancedChartProps["assetType"]) {
+function resolveTradingViewSymbol(
+  symbol: string,
+  assetType?: TradingViewAdvancedChartProps["assetType"],
+  market?: string,
+  exchange?: string,
+) {
   const normalized = symbol.trim().toUpperCase();
+  const normalizedMarket = market?.trim().toLowerCase();
+  const normalizedExchange = exchange?.trim().toUpperCase();
 
   if (!normalized) return null;
 
@@ -42,6 +51,11 @@ function resolveTradingViewSymbol(symbol: string, assetType?: TradingViewAdvance
   }
 
   if (assetType === "STOCK") {
+    if (normalizedMarket === "us") {
+      if (normalizedExchange?.includes("NYSE") || normalizedExchange === "NYQ") return `NYSE:${normalized}`;
+      if (normalizedExchange?.includes("AMEX") || normalizedExchange === "ASE") return `AMEX:${normalized}`;
+      return `NASDAQ:${normalized}`;
+    }
     if (/^[A-Z]{3,6}$/.test(normalized)) {
       return `BIST:${normalized}`;
     }
@@ -78,13 +92,18 @@ function resolveInterval(period?: string) {
 export function TradingViewAdvancedChart({
   symbol,
   assetType,
+  market,
+  exchange,
   period = "1mo",
   height = 460,
 }: TradingViewAdvancedChartProps) {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const { resolvedTheme } = useTheme();
 
-  const tvSymbol = React.useMemo(() => resolveTradingViewSymbol(symbol, assetType), [assetType, symbol]);
+  const tvSymbol = React.useMemo(
+    () => resolveTradingViewSymbol(symbol, assetType, market, exchange),
+    [assetType, exchange, market, symbol]
+  );
   const interval = React.useMemo(() => resolveInterval(period), [period]);
 
   React.useEffect(() => {

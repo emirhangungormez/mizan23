@@ -136,20 +136,21 @@ export function DashboardHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-10 w-full border-b bg-card px-3 py-3 sm:px-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="flex items-center gap-3">
-            <SidebarTrigger className="-ml-2" />
+    <header className="sticky top-0 z-10 w-full border-b bg-card px-3 py-2 sm:px-6 sm:py-3">
+      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center justify-between gap-2 lg:flex-1">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <SidebarTrigger className="-ml-2 shrink-0" />
 
-            <div className="hidden sm:flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-muted-foreground sm:hidden">
+              <BarChart3 className="size-4" />
+              <span className="truncate text-xs font-medium">{pageLabel}</span>
+            </div>
+
+            <div className="hidden items-center gap-2 text-muted-foreground sm:flex">
               <BarChart3 className="size-4" />
               <span className="text-sm font-medium">{pageLabel}</span>
             </div>
-          </div>
-
-          <div className="min-w-0 flex-1 lg:ml-2 lg:max-w-xl">
-            <QuickSearch />
           </div>
 
           <div className="relative hidden items-center gap-2 text-xs text-muted-foreground group lg:flex">
@@ -204,9 +205,29 @@ export function DashboardHeader() {
               </div>
             </div>
           </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={!mounted || isRefreshing}
+              className="size-8 border-border/50 sm:hidden"
+              title="Yenile"
+            >
+              <RefreshCw className={cn("size-3.5", isRefreshing && "animate-spin")} />
+              <span className="sr-only">Yenile</span>
+            </Button>
+            <ThemeToggle />
+          </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 sm:justify-end">
+        <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 flex-1 lg:max-w-xl">
+            <QuickSearch />
+          </div>
+
+          <div className="hidden items-center justify-between gap-2 sm:justify-end lg:flex">
           <div className="hidden xl:flex items-center gap-2 px-2 py-1 bg-muted/50 rounded text-xs">
             <span className="text-muted-foreground">Sistem</span>
             <span
@@ -233,8 +254,7 @@ export function DashboardHeader() {
             <RefreshCw className={cn("size-3.5", isRefreshing && "animate-spin")} />
             <span>YENILE</span>
           </Button>
-
-          <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>
